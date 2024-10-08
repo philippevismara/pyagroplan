@@ -1,0 +1,27 @@
+culture;famille;delai_retour;exigeante;salissante;prof_enracinement;besoin_lumiere;exigence_de_soins;surveillance;aspersion;besoins_goute_a_goute
+Ail;aliacees;4;oui;oui;1;mi-ombre;;;;
+Artichaut;asteracees;8;non;non;3;soleil;non;;;
+Aubergine;solanacees;4;oui;non;2;soleil;oui;;;2
+Betterave;chenopodiacees;2;non;oui;3;mi-ombre;;;;2
+Brocoli;brassicacees;4;oui;non;3;mi-ombre;;;;1
+Butternut;cucurbitacees;4;oui;non;3;soleil;;;non;1
+Carotte;apiacees;2;non;oui;3;mi-ombre;oui;oui;oui;3
+Chou-rave;brassicacees;2;non;oui;1;mi-ombre;oui;;oui;2
+Concombre;cucurbitacees;4;oui;non;2;soleil;;;non;3
+Courgette;cucurbitacees;4;oui;non;2;soleil;;;;2
+Echalotte;aliacees;4;oui;oui;1;mi-ombre;oui;;;1
+Engrais vert ete ;engrais_vert;8;non;non;3;ombre;;;;
+Engrais vert hiver ;engrais_vert;0;non;non;3;ombre;;;;
+epinard;chenopodiacees;2;non;non;1;mi-ombre;;;;1
+Fenouil;apiacees;2;non;oui;1;mi-ombre;oui;;oui;2
+Fraise;rosacees;8;oui;non;1;soleil;non;;;
+Haricot;fabacees;2;non;oui;2;mi-ombre;;;non;2
+Laitue;asteracees;2;non;non;1;ombre;oui;;;2
+Navet;brassicacees;2;non;oui;2;mi-ombre;oui;;;2
+Patate douce;convolvulacees;4;oui;non;3;mi-ombre;;;;
+Poireau;aliacees;4;oui;oui;1;mi-ombre;;;;1
+Poivron;solanacees;4;oui;non;3;soleil;oui;;;1
+Pomme de terre;solanacees;4;oui;non;2;mi-ombre;;;non;1
+Radis rave;brassicacees;2;oui;oui;1;ombre;oui;oui;;3
+Rhubarbe;polygonacees;8;non;non;3;ombre;non;;;
+Tomates cerise;solanacees;4;oui;non;3;soleil;oui;;;2
