@@ -31,6 +31,19 @@ class CropCalendar:
         return """CropCalendar(n_crops={}, n_assignments={})""".format(len(self.df_crop_calendar), self.n_assignments)
 
 
+class Solution:
+    def __init__(self, variables):
+        self.variables = variables
+        self.values = {var.name: var.get_value() for var in variables}
+        # TODO self.variables = choco_solution.retrieveIntVars()
+
+    def __str__(self):
+        return "Solution: {}".format(self.values)
+
+    def to_csv(self, filename):
+        raise NotImplementedError()
+
+
 class AgroEcoPlanModel:
     def __init__(self, crop_calendar, n_beds, verbose=False):
         # TODO add beds structure
@@ -56,9 +69,15 @@ class AgroEcoPlanModel:
     def add_constraint(self, constraint):
         constraint.post(self.model)
 
-    def solve(self):
+    def configure_solver(self):
         # TODO allow to configurate solver
-        return self.model.get_solver().solve()
+        self.solver = self.model.get_solver()
+
+    def solve(self):
+        return self.solver.solve()
+
+    def get_solution(self):
+        return Solution(self.assignment_vars)
 
     def _init_variables(self):
         """
@@ -88,17 +107,6 @@ class AgroEcoPlanModel:
     # TODO initNumberOfPositivePrecedencesCountBased
 
 
-class Solution:
-    def __init__(self):
-        raise NotImplementedError()
-
-    def __str__(self):
-        raise NotImplementedError()
-
-    def to_csv(self, filename):
-        raise NotImplementedError()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Agroecological crop allocation problem solver",
@@ -124,7 +132,9 @@ if __name__ == "__main__":
 
     model = AgroEcoPlanModel(crop_calendar, n_beds, verbose)
     model.init(constraints)
+    model.configure_solver()
     print(model)
 
-    solution = model.solve()
+    model.solve()
+    solution = model.get_solution()
     print(solution)
