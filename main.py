@@ -22,11 +22,13 @@ class CropCalendar:
 
         self.n_assignments = len(self.crop_calendar)
 
-        #self.interval_graph = nx.interval_graph(list(map(list, self.crop_calendar[:,1:].astype(int))))
         from interval_graph import interval_graph
         self._interval_graph = interval_graph(list(map(list, self.crop_calendar[:,1:].astype(int))))
         self._maximal_cliques = nx.chordal_graph_cliques(self._interval_graph)
         self.overlapping_assignments = list(list(node[0] for node in clique) for clique in self._maximal_cliques)
+
+    def __str__(self):
+        return """CropCalendar(n_crops={}, n_assignments={})""".format(len(self.df_crop_calendar), self.n_assignments)
 
 
 class AgroEcoPlanModel:
@@ -39,6 +41,9 @@ class AgroEcoPlanModel:
 
         self.model = Model()
         self.assignment_vars = None
+
+    def __str__(self):
+        return "AgroEcoPlanModel(crop_calendar={}, n_beds={}, verbose={})".format(crop_calendar, n_beds, verbose)
 
     def init(self, constraints=None):
         self._init_variables()
@@ -119,6 +124,7 @@ if __name__ == "__main__":
 
     model = AgroEcoPlanModel(crop_calendar, n_beds, verbose)
     model.init(constraints)
-    solution = model.solve()
+    print(model)
 
+    solution = model.solve()
     print(solution)
