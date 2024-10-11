@@ -1,34 +1,11 @@
 import argparse
 
 import numpy as np
-import networkx as nx
-import pandas as pd
 from pychoco import Model
 
 import constraints
-
-
-class CropCalendar:
-    def __init__(self, df_crop_calendar):
-        self.df_crop_calendar = df_crop_calendar.copy()
-
-        df = self.df_crop_calendar
-        repeats = df["quantite"].values
-        self.crops_groups = np.repeat(df.index.values, repeats)
-        df = df.loc[self.crops_groups]
-        self.crops_groups_assignments = np.split(np.arange(len(df)), np.cumsum(repeats)[:-1])
-        df.drop(columns="quantite", inplace=True)
-        self.crop_calendar = df[["culture", "debut", "fin"]].values
-
-        self.n_assignments = len(self.crop_calendar)
-
-        from interval_graph import interval_graph
-        self._interval_graph = interval_graph(list(map(list, self.crop_calendar[:,1:].astype(int))))
-        self._maximal_cliques = nx.chordal_graph_cliques(self._interval_graph)
-        self.overlapping_assignments = list(list(node[0] for node in clique) for clique in self._maximal_cliques)
-
-    def __str__(self):
-        return """CropCalendar(n_crops={}, n_assignments={})""".format(len(self.df_crop_calendar), self.n_assignments)
+from beds_data import BedsDataLoader
+from crop_calendar import CropCalendarLoader
 
 
 class Solution:
@@ -45,18 +22,22 @@ class Solution:
 
 
 class AgroEcoPlanModel:
-    def __init__(self, crop_calendar, n_beds, verbose=False):
-        # TODO add beds structure
+    def __init__(self, crop_calendar, beds_data, verbose=False):
         self.crop_calendar = crop_calendar
+        self.beds_data = beds_data
         self.n_assignments = self.crop_calendar.n_assignments
-        self.n_beds = n_beds
+        self.n_beds = self.beds_data.n_beds
         self.verbose = verbose
 
         self.model = Model()
         self.assignment_vars = None
 
     def __str__(self):
-        return "AgroEcoPlanModel(crop_calendar={}, n_beds={}, verbose={})".format(crop_calendar, n_beds, verbose)
+        return "AgroEcoPlanModel(crop_calendar={}, beds_data={}, verbose={})".format(
+            self.crop_calendar,
+            self.beds_data,
+            verbose,
+        )
 
     def init(self, constraints=None):
         self._init_variables()
@@ -93,7 +74,7 @@ class AgroEcoPlanModel:
             and separators should be sufficient, but we should prove it to be sure.
         """
         for overlapping_assignments in self.crop_calendar.overlapping_assignments:
-            overlapping_assignment_vars = self.assignment_vars[overlapping_assignments]
+            overlapping_assignment_vars = self.assignment_vars[list(overlapping_assignments)]
             self.model.all_different(overlapping_assignment_vars).post()
 
     def _break_symmetries(self):
@@ -115,12 +96,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     crop_calendar_filename = "data/crop_calendar_1an_v7.csv"
-    n_beds = 80
+    beds_data_filename = "data/beds_data.csv"
     verbose = True
 
-    df = pd.read_csv(crop_calendar_filename, sep=";")
-    df_crop_calendar = df[["culture", "debut", "fin", "quantite"]]
-    crop_calendar = CropCalendar(df_crop_calendar)
+    crop_calendar = CropCalendarLoader.load(crop_calendar_filename)
+    beds_data = BedsDataLoader.load(beds_data_filename)
 
     constraints = [
         #constraints.CropRotationConstraint(),
@@ -128,9 +108,10 @@ if __name__ == "__main__":
     ]
 
     print(crop_calendar)
+    print(beds_data)
     print(constraints)
 
-    model = AgroEcoPlanModel(crop_calendar, n_beds, verbose)
+    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose)
     model.init(constraints)
     model.configure_solver()
     print(model)
