@@ -2,16 +2,13 @@ from abc import ABC, abstractmethod
 
 
 class Constraint(ABC):
-    def __init__(self):
-        raise NotImplementedError()
-
     @abstractmethod
     def post(self, model): ...
 
 
 class CropRotationConstraint(Constraint):
     def __init__(self):
-        raise NotImplementedError()
+        pass
 
     def post(self, model):
         raise NotImplementedError()
