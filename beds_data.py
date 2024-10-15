@@ -19,10 +19,11 @@ class BedsDataLoader:
 
 class BedsData:
     def __init__(self, df_beds_data):
-        self.df_beds_data = df_beds_data
+        self.df_beds_data = df_beds_data.copy()
+        self.adjacency_matrix = self.df_beds_data["planche_contact"]
 
         def adjacency_function(i, j):
-            return j in self.df_beds_data["planche_contact"].loc[i]
+            return j in self.adjacency_matrix.loc[i]
         self.adjacency_function = adjacency_function
 
         self.n_beds = len(self.df_beds_data)

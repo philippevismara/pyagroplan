@@ -21,7 +21,7 @@ if __name__ == "__main__":
     beds_data = BedsDataLoader.load(beds_data_filename)
 
     constraints = [
-        constraints.CropRotationConstraint(),
+        # constraints.CropRotationConstraint(),
         # constraints.DiluteSpeciesConstraint(),
     ]
 

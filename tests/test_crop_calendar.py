@@ -41,7 +41,7 @@ def test_crop_calendar(df_crop_calendar):
     for group, expected_group in zip(crop_calendar.crops_groups_assignments, expected_groups):
         np.testing.assert_array_equal(group, expected_group)
 
-    assert crop_calendar.overlapping_assignments == frozenset((
+    assert crop_calendar.crops_overlapping_cultivation_intervals == frozenset((
         frozenset((0, 1, 2, 3, 4)),
         frozenset((5,)),
     ))
