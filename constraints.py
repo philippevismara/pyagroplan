@@ -24,12 +24,12 @@ class ForbidNegativeInteractionsConstraint(Constraint):
     ):
         self.crops_overlapping_intervals = crop_calendar.crops_overlapping_cultivation_intervals
         self.crops_interactions = crop_calendar.crops_data.crops_interactions
-        self.crops_name = crop_calendar.crops_name
+        self.crops_names = crop_calendar.crops_names
         self.beds_data = beds_data
         self.implementation = implementation
 
         build_funcs = {
-            "explicitly": self._build_explicitly,
+            # "explicitly": self._build_explicitly,
             "table": self._build_table,
             "distance": self._build_distance,
         }
@@ -49,7 +49,7 @@ class ForbidNegativeInteractionsConstraint(Constraint):
             for j, a_j in enumerate(assignment_vars[i+1:], i+1):
                 if (
                     any(frozenset((i, j)) <= interval for interval in self.crops_overlapping_intervals)
-                    and self.crops_interactions(self.crops_name[i], self.crops_name[j]) < 0
+                    and self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0
                 ):
                     constraints.append(
                         self.beds_data.adjacency_function(a_i, a_j) == False
@@ -64,7 +64,7 @@ class ForbidNegativeInteractionsConstraint(Constraint):
             for j, a_j in enumerate(assignment_vars[i+1:], i+1):
                 if (
                     any(frozenset((i, j)) <= interval for interval in self.crops_overlapping_intervals)
-                    and self.crops_interactions(self.crops_name[i], self.crops_name[j]) < 0
+                    and self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0
                 ):
                     forbidden_tuples = []
                     for val1 in a_i.get_domain_values():
@@ -78,13 +78,14 @@ class ForbidNegativeInteractionsConstraint(Constraint):
 
     def _build_distance(self, model, assignment_vars):
         # TODO prune useless constraints manually (or automatically ?)
+        # TODO stronger constraint then needed
         constraints = []
 
         for i, a_i in enumerate(assignment_vars):
             for j, a_j in enumerate(assignment_vars[i+1:], i+1):
                 if (
                     any(frozenset((i, j)) <= interval for interval in self.crops_overlapping_intervals)
-                    and self.crops_interactions(self.crops_name[i], self.crops_name[j]) < 0
+                    and self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0
                 ):
                     constraints.append(
                         model.distance(a_i, a_j, ">", 1)

@@ -1,11 +1,11 @@
+import numpy as np
 import pytest
 from pathlib import Path
 
-import constraints as cst
 from model import AgroEcoPlanModel
 
 from beds_data import BedsDataLoader
-from crop_calendar import CropCalendarLoader
+from crops_calendar import CropsCalendarLoader
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -18,15 +18,15 @@ def beds_data(beds_data_csv_filename):
 
 
 @pytest.fixture
-def crop_calendar():
-    return CropCalendarLoader.load(DATA_PATH / "crop_calendar.csv")
+def crops_calendar():
+    return CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
 
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data.csv"])
-def test_agroecoplanmodel_no_constraints_no_solution(crop_calendar, beds_data):
+def test_agroecoplanmodel_no_constraints_no_solution(crops_calendar, beds_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
     model.init(constraints)
     model.configure_solver()
 
@@ -37,27 +37,26 @@ def test_agroecoplanmodel_no_constraints_no_solution(crop_calendar, beds_data):
 
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data_normal.csv"])
-def test_agroecoplanmodel_no_constraints_with_solution(crop_calendar, beds_data):
-    # TODO do some tests on solution
+def test_agroecoplanmodel_no_constraints_with_solution(crops_calendar, beds_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
     model.init(constraints)
     model.configure_solver()
 
-    solution = model.solve()
-    assert len(solution) == 6
-    print(solution)
-
+    for solution in model.iterate_over_all_solutions():
+        crops_planning = solution.crops_planning["assignment"].values
+        assert len(np.intersect1d(crops_planning[:3], crops_planning[3:5])) == 0
+        assert len(np.intersect1d(crops_planning[5:], crops_planning[3:5])) == 0
 
 """
-def test_agroecoplanmodel(crop_calendar, beds_data):
+def test_agroecoplanmodel(crops_calendar, beds_data):
     constraints = [
-        cst.CropRotationConstraint(),
+        cstrs.CropRotationConstraint(),
         #constraints.DiluteSpeciesConstraint(),
     ]
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
     model.init(constraints)
     model.configure_solver()
     print(model)

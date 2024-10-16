@@ -5,10 +5,10 @@ from solution import Solution
 
 
 class AgroEcoPlanModel:
-    def __init__(self, crop_calendar, beds_data, verbose=False):
-        self.crop_calendar = crop_calendar
+    def __init__(self, crops_calendar, beds_data, verbose=False):
+        self.crops_calendar = crops_calendar
         self.beds_data = beds_data
-        self.n_assignments = self.crop_calendar.n_assignments
+        self.n_assignments = self.crops_calendar.n_assignments
         self.n_beds = self.beds_data.n_beds
         self.verbose = verbose
 
@@ -17,7 +17,7 @@ class AgroEcoPlanModel:
 
     def __str__(self):
         return "AgroEcoPlanModel(crop_calendar={}, beds_data={}, verbose={})".format(
-            self.crop_calendar,
+            self.crops_calendar,
             self.beds_data,
             self.verbose,
         )
@@ -31,7 +31,9 @@ class AgroEcoPlanModel:
             self.add_constraint(constraint)
 
     def add_constraint(self, constraint):
-        constraint.build(self.model, self.assignment_vars)
+        constraints = constraint.build(self.model, self.assignment_vars)
+        for cstr in constraints:
+            cstr.post()
 
     def configure_solver(self):
         # TODO allow to configurate solver
@@ -42,7 +44,14 @@ class AgroEcoPlanModel:
         if not has_solution:
             raise RuntimeError("No solution found")
         else:
-            return Solution(self.assignment_vars)
+            return Solution(self.crops_calendar, self.assignment_vars)
+
+    def iterate_over_all_solutions(self):
+        while True:
+            try:
+                yield self.solve()
+            except RuntimeError:
+                break
 
     def _init_variables(self):
         """
@@ -57,12 +66,12 @@ class AgroEcoPlanModel:
         TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
             and separators should be sufficient, but we should prove it to be sure.
         """
-        for overlapping_crops in self.crop_calendar.crops_overlapping_cultivation_intervals:
+        for overlapping_crops in self.crops_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
             self.model.all_different(overlapping_assignment_vars).post()
 
     def _break_symmetries(self):
-        for group in self.crop_calendar.crops_groups_assignments:
+        for group in self.crops_calendar.crops_groups_assignments:
             # TODO remove len(group) == 1
             assert len(group) > 0
             group_vars = self.assignment_vars[group]

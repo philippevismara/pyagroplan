@@ -3,7 +3,7 @@ from pathlib import Path
 
 import constraints as cstrs
 from beds_data import BedsDataLoader
-from crop_calendar import CropCalendarLoader
+from crops_calendar import CropsCalendarLoader
 from crops_data import CropsDataLoader
 from model import AgroEcoPlanModel
 
@@ -14,7 +14,7 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def beds_data():
-    return BedsDataLoader.load(DATA_PATH / "beds_data.csv")
+    return BedsDataLoader.load(DATA_PATH / "beds_data_normal.csv")
 
 
 @pytest.fixture
@@ -23,8 +23,8 @@ def crops_data():
 
 
 @pytest.fixture
-def crop_calendar(crops_data):
-    return CropCalendarLoader.load(DATA_PATH / "crop_calendar.csv", crops_data)
+def crops_calendar(crops_data):
+    return CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv", crops_data)
 
 
 def test_abstract_constraint():
@@ -32,11 +32,17 @@ def test_abstract_constraint():
         cstrs.Constraint()
 
 
-@pytest.mark.parametrize("implementation", ["explicitly", "table", "distance"])
-def test_forbid_negative_interactions_constraint(crop_calendar, beds_data, implementation):
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+@pytest.mark.parametrize("implementation", ["table", "distance"])
+def test_forbid_negative_interactions_constraint(crops_calendar, beds_data, implementation):
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
     constraint = cstrs.ForbidNegativeInteractionsConstraint(
-        crop_calendar, beds_data, implementation
+        crops_calendar, beds_data, implementation
     )
     model.init([constraint])
+    model.configure_solver()
+
+    for solution in model.iterate_over_all_solutions():
+        crops_planning = solution.crops_planning["assignment"]
+        assert not beds_data.adjacency_function(crops_planning[5], crops_planning[3])
+        assert not beds_data.adjacency_function(crops_planning[5], crops_planning[4])

@@ -3,16 +3,16 @@ import numpy as np
 import pandas as pd
 
 
-class CropCalendarLoader:
+class CropsCalendarLoader:
     @staticmethod
     def load(filename, crops_data=None):
         df = pd.read_csv(filename, sep=";")
         df_crop_calendar = df[["culture", "debut", "fin", "quantite"]]
-        crop_calendar = CropCalendar(df_crop_calendar, crops_data)
+        crop_calendar = CropsCalendar(df_crop_calendar, crops_data)
         return crop_calendar
 
 
-class CropCalendar:
+class CropsCalendar:
     def __init__(self, df_crop_calendar, crops_data=None):
         self.df_crop_calendar = df_crop_calendar.copy()
         self.crops_data = crops_data
@@ -26,9 +26,9 @@ class CropCalendar:
         self.crop_calendar = df[["culture", "debut", "fin"]].values
 
         # TODO fix the data instead
-        self.crops_name = df["culture"].str.lower()
-        self.crops_name = self.crops_name.str.replace(" ", "_")
-        self.crops_name = self.crops_name.values
+        self.crops_names = df["culture"].str.lower()
+        self.crops_names = self.crops_names.str.replace(" ", "_")
+        self.crops_names = self.crops_names.values
 
         self.n_assignments = len(self.crop_calendar)
 
@@ -40,4 +40,7 @@ class CropCalendar:
         )
 
     def __str__(self):
-        return """CropCalendar(n_crops={}, n_assignments={})""".format(len(self.df_crop_calendar), self.n_assignments)
+        return "CropsCalendar(n_crops={}, n_assignments={})".format(
+            len(self.df_crop_calendar),
+            self.n_assignments,
+        )
