@@ -13,11 +13,24 @@ class CropsCalendarLoader:
 
 
 class CropsCalendar:
-    def __init__(self, df_crop_calendar, crops_data=None):
-        self.df_crop_calendar = df_crop_calendar.copy()
+    def __init__(self, df_crops_calendar, crops_data=None):
+        self.df_crops_calendar = df_crops_calendar.copy()
         self.crops_data = crops_data
 
-        df = self.df_crop_calendar
+        # TODO fix the data instead
+        self.df_crops_calendar["culture"] = df_crops_calendar["culture"].str.lower()
+        self.df_crops_calendar["culture"] = self.df_crops_calendar["culture"].str.replace(" ", "_")
+
+        if self.crops_data is not None:
+            self.df_crops_calendar = pd.merge(
+                self.df_crops_calendar,
+                self.crops_data.df_metadata,
+                how="left",
+                left_on="culture",
+                right_index=True,
+            )
+
+        df = self.df_crops_calendar
         repeats = df["quantite"].values
         self.crops_groups = np.repeat(df.index.values, repeats)
         df = df.loc[self.crops_groups]
@@ -25,10 +38,9 @@ class CropsCalendar:
         df.drop(columns="quantite", inplace=True)
         self.crop_calendar = df[["culture", "debut", "fin"]].values
 
-        # TODO fix the data instead
-        self.crops_names = df["culture"].str.lower()
-        self.crops_names = self.crops_names.str.replace(" ", "_")
-        self.crops_names = self.crops_names.values
+        self.crops_names = df["culture"].values
+
+        self.df_assignments = df
 
         self.n_assignments = len(self.crop_calendar)
 
@@ -41,6 +53,6 @@ class CropsCalendar:
 
     def __str__(self):
         return "CropsCalendar(n_crops={}, n_assignments={})".format(
-            len(self.df_crop_calendar),
+            len(self.df_crops_calendar),
             self.n_assignments,
         )

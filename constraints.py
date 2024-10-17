@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class Constraint(ABC):
     @abstractmethod
-    def build(self, model): ...
+    def build(self, model, assignment_vars): ...
 
 
 class CropRotationConstraint(Constraint):
@@ -11,20 +11,20 @@ class CropRotationConstraint(Constraint):
         self.crops_data = crops_data
         self.return_delay = return_delay
 
-    def build(self, model):
+    def build(self, model, assignment_vars):
         raise NotImplementedError()
 
 
 class ForbidNegativeInteractionsConstraint(Constraint):
     def __init__(
             self,
-            crop_calendar,
+            crops_calendar,
             beds_data,
             implementation="distance",
     ):
-        self.crops_overlapping_intervals = crop_calendar.crops_overlapping_cultivation_intervals
-        self.crops_interactions = crop_calendar.crops_data.crops_interactions
-        self.crops_names = crop_calendar.crops_names
+        self.crops_overlapping_intervals = crops_calendar.crops_overlapping_cultivation_intervals
+        self.crops_interactions = crops_calendar.crops_data.crops_interactions
+        self.crops_names = crops_calendar.crops_names
         self.beds_data = beds_data
         self.implementation = implementation
 
@@ -94,44 +94,83 @@ class ForbidNegativeInteractionsConstraint(Constraint):
         return constraints
 
 
-class DiluteSpeciesConstraint(Constraint):
-    def __init__(self):
-        raise NotImplementedError()
+class AdjacencyConstraint(Constraint):
+    def __init__(self, crops_calendar, beds_data, forbid):
+        self.crops_overlapping_intervals = crops_calendar.crops_overlapping_cultivation_intervals
+        self.beds_data = beds_data
+        self.forbid = forbid
 
-    def build(self, model):
-        raise NotImplementedError()
+    @abstractmethod
+    def selection_function(self, i, j): ...
+
+    def build(self, model, assignment_vars):
+        constraints = []
+
+        for i, a_i in enumerate(assignment_vars):
+            for j, a_j in enumerate(assignment_vars[i+1:], i+1):
+                if (
+                    any(frozenset((i, j)) <= interval for interval in self.crops_overlapping_intervals)
+                    and self.selection_function(i, j)
+                ):
+                    tuples = []
+                    for val1 in a_i.get_domain_values():
+                        for val2 in self.beds_data.adjacency_matrix[val1]:
+                            tuples.append((val1, val2))
+
+                    constraints.append(
+                        model.table([a_i, a_j], tuples, feasible=not self.forbid)
+                    )
+
+        return constraints
 
 
-class DiluteFamilyConstraint(Constraint):
-    def __init__(self):
-        raise NotImplementedError()
+class DiluteSpeciesConstraint(AdjacencyConstraint):
+    def __init__(self, crops_calendar, beds_data):
+        super().__init__(crops_calendar, beds_data, forbid=True)
+        self.crops_species = crops_calendar.crops_names
 
-    def build(self, model):
-        raise NotImplementedError()
+    def selection_function(self, i, j):
+        return self.crops_species[i] == self.crops_species[j]
+
+
+class DiluteFamilyConstraint(AdjacencyConstraint):
+    def __init__(self, crops_calendar, beds_data):
+        super().__init__(crops_calendar, beds_data, forbid=True)
+        self.crops_families = crops_calendar.df_assignments["famille"].values
+        print(self.crops_families)
+
+    def selection_function(self, i, j):
+        return self.crops_families[i] == self.crops_families[j]
 
 
 class GroupIdenticalCropsConstraint(Constraint):
     def __init__(self):
         raise NotImplementedError()
 
-    def build_constraint(self, assignment_variables):
+    def build(self, model, assignment_variables):
         raise NotImplementedError()
 
 
+"""
+TODO handle optimization objective
 class InteractionConstraint(Constraint):
     def __init__(self):
         raise NotImplementedError()
 
-    def build(self, model):
+    def build(self, model, assignment_vars):
         raise NotImplementedError()
+"""
 
 
+"""
+TODO what is this constraint ? (added after paper)
 class ForbidNegativePrecedencesConstraint(Constraint):
     def __init__(self):
         raise NotImplementedError()
 
-    def build(self, model):
+    def build(self, model, assignment_vars):
         raise NotImplementedError()
+"""
 
 
 """

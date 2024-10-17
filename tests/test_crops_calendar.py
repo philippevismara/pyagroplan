@@ -13,9 +13,9 @@ DATA_PATH = CURRENT_DIR / "data"
 def df_crops_calendar():
     df_crops_calendar = pd.DataFrame(
         [
-            ["Carotte", 1, 5, 3],
-            ["Tomate", 3, 9, 2],
-            ["Pomme de terre", 8, 12, 1],
+            ["carotte", 1, 5, 3],
+            ["tomate", 3, 9, 2],
+            ["pomme_de_terre", 8, 12, 1],
         ],
         columns=["culture", "debut", "fin", "quantite"],
     )
@@ -25,7 +25,7 @@ def df_crops_calendar():
 def test_crops_calendar_loader(df_crops_calendar):
     crops_calendar = CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
 
-    assert (crops_calendar.df_crop_calendar == df_crops_calendar).all(axis=None)
+    assert (crops_calendar.df_crops_calendar == df_crops_calendar).all(axis=None)
 
 
 def test_crops_calendar(df_crops_calendar):
