@@ -4,11 +4,19 @@ import pandas as pd
 class BedsDataLoader:
     @staticmethod
     def load(filename):
+        def list_converter(s):
+            str_list = s.split(",")
+
+            if len(str_list) == 0 or len(str_list[0]) == 0:
+                return tuple()
+            else:
+                return tuple(map(int, str_list))
+
         df = pd.read_csv(
             filename,
             sep=";",
             converters={
-                "planche_contact": lambda s: tuple(map(int, s.split(",")))
+                "planche_contact": list_converter
             },
             index_col="planche",
         )

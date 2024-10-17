@@ -36,16 +36,16 @@ class CropsCalendar:
         df = df.loc[self.crops_groups]
         self.crops_groups_assignments = np.split(np.arange(len(df)), np.cumsum(repeats)[:-1])
         df.drop(columns="quantite", inplace=True)
-        self.crop_calendar = df[["culture", "debut", "fin"]].values
+        self.crops_calendar = df[["culture", "debut", "fin"]].values
 
         self.crops_names = df["culture"].values
 
         self.df_assignments = df
 
-        self.n_assignments = len(self.crop_calendar)
+        self.n_assignments = len(self.crops_calendar)
 
         from interval_graph import interval_graph
-        self._interval_graph = interval_graph(list(map(list, self.crop_calendar[:,1:].astype(int))))
+        self._interval_graph = interval_graph(list(map(list, self.crops_calendar[:,1:].astype(int))))
         self.crops_overlapping_cultivation_intervals = frozenset(
             frozenset(node[0] for node in clique)
             for clique in nx.chordal_graph_cliques(self._interval_graph)

@@ -1,18 +1,35 @@
 from abc import ABC, abstractmethod
 
+from interval_graph import interval_graph_rotation
+
 
 class Constraint(ABC):
     @abstractmethod
     def build(self, model, assignment_vars): ...
 
 
-class CropRotationConstraint(Constraint):
-    def __init__(self, crops_data, return_delay):
-        self.crops_data = crops_data
-        self.return_delay = return_delay
+class CropsRotationConstraint(Constraint):
+    def __init__(self, crops_calendar):
+        self.crops_calendar = crops_calendar
+        self.return_delay = self.crops_calendar.df_assignments["delai_retour"].values
+        self.families = self.crops_calendar.df_assignments["famille"].values
+
+        intervals = self.crops_calendar.crops_calendar[:, 1:].astype(int)
+        intervals[:, -1] += self.return_delay
+        self.interval_graph = interval_graph_rotation(list(map(list, intervals)), self.families)
 
     def build(self, model, assignment_vars):
-        raise NotImplementedError()
+        constraints = []
+
+        for node_i in self.interval_graph:
+            i, *_ = node_i
+            for node_j in self.interval_graph.neighbors(node_i):
+                j, *_ = node_j
+                constraints.append(
+                    model.arithm(assignment_vars[i], "!=", assignment_vars[j])
+                )
+
+        return constraints
 
 
 class ForbidNegativeInteractionsConstraint(Constraint):
@@ -137,7 +154,6 @@ class DiluteFamilyConstraint(AdjacencyConstraint):
     def __init__(self, crops_calendar, beds_data):
         super().__init__(crops_calendar, beds_data, forbid=True)
         self.crops_families = crops_calendar.df_assignments["famille"].values
-        print(self.crops_families)
 
     def selection_function(self, i, j):
         return self.crops_families[i] == self.crops_families[j]

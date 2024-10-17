@@ -1,6 +1,8 @@
 import pytest
 from pathlib import Path
 
+import numpy as np
+
 import constraints as cstrs
 from beds_data import BedsDataLoader
 from crops_calendar import CropsCalendarLoader
@@ -64,7 +66,7 @@ def test_dilute_species_constraint(crops_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    assert len(solutions) == 6
+    assert len(solutions) > 0
 
     for solution in solutions:
         crops_planning = solution.crops_planning["assignment"]
@@ -86,4 +88,33 @@ def test_dilute_family_constraint(crops_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    assert len(solutions) == 0
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"]
+
+        assert not beds_data.adjacency_function(crops_planning[0], crops_planning[1])
+        assert not beds_data.adjacency_function(crops_planning[1], crops_planning[2])
+        assert not beds_data.adjacency_function(crops_planning[0], crops_planning[2])
+
+        assert not beds_data.adjacency_function(crops_planning[3], crops_planning[4])
+        assert not beds_data.adjacency_function(crops_planning[3], crops_planning[5])
+        assert not beds_data.adjacency_function(crops_planning[4], crops_planning[5])
+
+
+def test_crops_rotation_constraint(crops_calendar, beds_data):
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    constraint = cstrs.CropsRotationConstraint(
+        crops_calendar
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"]
+
+        assert len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0

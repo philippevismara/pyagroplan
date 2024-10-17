@@ -16,6 +16,7 @@ def df_crops_calendar():
             ["carotte", 1, 5, 3],
             ["tomate", 3, 9, 2],
             ["pomme_de_terre", 8, 12, 1],
+            ["carotte", 10, 12, 1],
         ],
         columns=["culture", "debut", "fin", "quantite"],
     )
@@ -31,7 +32,7 @@ def test_crops_calendar_loader(df_crops_calendar):
 def test_crops_calendar(df_crops_calendar):
     crops_calendar = CropsCalendar(df_crops_calendar)
 
-    assert crops_calendar.n_assignments == 6
+    assert crops_calendar.n_assignments == 7
 
     expected_groups = [
         [0, 1, 2],
@@ -44,4 +45,5 @@ def test_crops_calendar(df_crops_calendar):
     assert crops_calendar.crops_overlapping_cultivation_intervals == frozenset((
         frozenset((0, 1, 2, 3, 4)),
         frozenset((3, 4, 5)),
+        frozenset((5, 6)),
     ))

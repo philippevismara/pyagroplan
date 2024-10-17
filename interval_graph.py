@@ -67,3 +67,30 @@ def interval_graph(intervals):
             if max1 >= min2 and max2 >= min1:
                 graph.add_edge(interval1, interval2)
     return graph
+
+
+def interval_graph_rotation(intervals, families):
+    intervals = list(intervals)
+    for interval in intervals:
+        if not (isinstance(interval, Sequence) and len(interval) == 2):
+            raise TypeError(
+                "Each interval must have length 2, and be a "
+                "collections.abc.Sequence such as tuple or list."
+            )
+        if interval[0] > interval[1]:
+            raise ValueError(f"Interval must have lower value first. Got {interval}")
+
+    graph = nx.Graph()
+
+    tupled_intervals = [(i,) + tuple(interval) for i, interval in enumerate(intervals)]
+    graph.add_nodes_from(tupled_intervals)
+
+    while tupled_intervals:
+        i, min1, max1 = interval1 = tupled_intervals.pop()
+        for interval2 in tupled_intervals:
+            j, min2, max2 = interval2
+            if families[i] == families[j]:
+                if max1 >= min2 and max2 >= min1:
+                    graph.add_edge(interval1, interval2)
+
+    return graph

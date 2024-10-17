@@ -1,6 +1,9 @@
 import pandas as pd
 
 
+N_WEEKS_PER_YEAR = 52
+
+
 class CropsDataLoader:
     @staticmethod
     def load(metadata_filename, interactions_filename):
@@ -23,6 +26,9 @@ class CropsData:
         self.df_interactions = df_crops_interactions.copy()
 
         self.n_crops = len(self.df_metadata)
+
+        # TODO fix the data instead
+        self.df_metadata["delai_retour"] = self.df_metadata["delai_retour"] * N_WEEKS_PER_YEAR
 
         def crops_interactions(crop_i, crop_j):
             return self.df_interactions.loc[crop_i, crop_j]

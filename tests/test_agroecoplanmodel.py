@@ -43,11 +43,15 @@ def test_agroecoplanmodel_no_constraints_with_solution(crops_calendar, beds_data
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
     model.init(constraints)
     model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
 
-    for solution in model.iterate_over_all_solutions():
+    assert len(solutions) > 0
+
+    for solution in solutions:
         crops_planning = solution.crops_planning["assignment"].values
         assert len(np.intersect1d(crops_planning[:3], crops_planning[3:5])) == 0
-        assert len(np.intersect1d(crops_planning[5:], crops_planning[3:5])) == 0
+        assert len(np.intersect1d(crops_planning[3:5], crops_planning[5:6])) == 0
+        assert len(np.intersect1d(crops_planning[5:6], crops_planning[6:7])) == 0
 
 """
 def test_agroecoplanmodel(crops_calendar, beds_data):
