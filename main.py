@@ -21,7 +21,7 @@ if __name__ == "__main__":
     beds_data = BedsDataLoader.load(beds_data_filename)
 
     constraints = [
-        # cstrs.CropRotationConstraint(),
+        cstrs.CropsRotationConstraint(crops_calendar),
         # cstrs.DiluteSpeciesConstraint(),
     ]
 

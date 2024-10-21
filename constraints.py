@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING
+from __future__ import annotations
+from typing import TYPE_CHECKING, no_type_check
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
     from pychoco.variables.intvar import IntVar
-
-    from collections.abc import Sequence
 
     from beds_data import BedsData
     from crops_calendar import CropsCalendar
@@ -51,6 +52,9 @@ class ForbidNegativeInteractionsConstraint(Constraint):
             beds_data: BedsData,
             implementation: str="distance",
     ):
+        if not crops_calendar.crops_data:
+            raise ValueError("No crops interaction data can be found")
+
         self.crops_overlapping_intervals = crops_calendar.crops_overlapping_cultivation_intervals
         self.crops_interactions = crops_calendar.crops_data.crops_interactions
         self.crops_names = crops_calendar.crops_names
@@ -70,6 +74,7 @@ class ForbidNegativeInteractionsConstraint(Constraint):
     def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         return self.build_func(model, assignment_vars)
 
+    """
     def _build_explicitly(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         # TODO does this really work? (calling adjacency function with IntVars?)
         constraints = []
@@ -85,6 +90,7 @@ class ForbidNegativeInteractionsConstraint(Constraint):
                     )
 
         return constraints
+    """
 
     def _build_table(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         constraints = []
@@ -159,19 +165,20 @@ class DiluteSpeciesConstraint(AdjacencyConstraint):
         self.crops_species = crops_calendar.crops_names
 
     def selection_function(self, i: int, j: int) -> bool:
-        return self.crops_species[i] == self.crops_species[j]
+        return self.crops_species[i] == self.crops_species[j] # type: ignore[no-any-return]
 
 
 class DiluteFamilyConstraint(AdjacencyConstraint):
     def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
         super().__init__(crops_calendar, beds_data, forbid=True)
-        self.crops_families = crops_calendar.df_assignments["famille"].values
+        self.crops_families = crops_calendar.df_assignments["famille"].array
 
     def selection_function(self, i: int, j: int) -> bool:
-        return self.crops_families[i] == self.crops_families[j]
+        return self.crops_families[i] == self.crops_families[j] # type: ignore[no-any-return]
 
 
 class GroupIdenticalCropsConstraint(Constraint):
+    @no_type_check
     def __init__(self):
         raise NotImplementedError()
 

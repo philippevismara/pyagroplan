@@ -1,8 +1,18 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pychoco.variables.intvar import IntVar
+
+    from crops_calendar import CropsCalendar
+
 import pandas as pd
 
 
 class Solution:
-    def __init__(self, crops_calendar, variables):
+    def __init__(self, crops_calendar: CropsCalendar, variables: Sequence[IntVar]):
         self.crops_calendar = crops_calendar
         self.variables = variables
 
@@ -15,11 +25,11 @@ class Solution:
             "assignment": self.variables_values
         })
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.crops_planning)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Solution:\n{}".format(self.crops_planning)
 
-    def to_csv(self, filename):
+    def to_csv(self, filename: str) -> None:
         raise NotImplementedError()

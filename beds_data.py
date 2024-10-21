@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import pandas as pd
 
 
 class BedsDataLoader:
     @staticmethod
-    def load(filename):
-        def list_converter(s):
+    def load(filename: str) -> BedsData:
+        def list_converter(s: str) -> tuple[int,...]:
             str_list = s.split(",")
 
             if len(str_list) == 0 or len(str_list[0]) == 0:
@@ -26,18 +28,18 @@ class BedsDataLoader:
 
 
 class BedsData:
-    def __init__(self, df_beds_data):
+    def __init__(self, df_beds_data: pd.DataFrame):
         self.df_beds_data = df_beds_data.copy()
         self.adjacency_matrix = self.df_beds_data["planche_contact"]
 
-        def adjacency_function(i, j):
+        def adjacency_function(i: int, j: int) -> bool:
             return j in self.adjacency_matrix.loc[i]
         self.adjacency_function = adjacency_function
 
         self.n_beds = len(self.df_beds_data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return """BedsData(n_beds={})""".format(self.n_beds)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_beds
