@@ -9,7 +9,7 @@ __all__ = ["interval_graph"]
 
 
 #@nx._dispatchable(graphs=None, returns_graph=True)
-def interval_graph(intervals):
+def interval_graph(intervals, filter_func=None):
     """Generates an interval graph for a list of intervals given.
 
     In graph theory, an interval graph is an undirected graph formed from a set
@@ -57,40 +57,15 @@ def interval_graph(intervals):
 
     graph = nx.Graph()
 
-    tupled_intervals = [(i,) + tuple(interval) for i, interval in enumerate(intervals)]
-    graph.add_nodes_from(tupled_intervals)
+    nodes = [(i, {"interval": tuple(interval)}) for i, interval in enumerate(intervals)]
+    graph.add_nodes_from(nodes)
 
-    while tupled_intervals:
-        i, min1, max1 = interval1 = tupled_intervals.pop()
-        for interval2 in tupled_intervals:
-            j, min2, max2 = interval2
-            if max1 >= min2 and max2 >= min1:
-                graph.add_edge(interval1, interval2)
-    return graph
-
-
-def interval_graph_rotation(intervals, families):
-    intervals = list(intervals)
-    for interval in intervals:
-        if not (isinstance(interval, Sequence) and len(interval) == 2):
-            raise TypeError(
-                "Each interval must have length 2, and be a "
-                "collections.abc.Sequence such as tuple or list."
-            )
-        if interval[0] > interval[1]:
-            raise ValueError(f"Interval must have lower value first. Got {interval}")
-
-    graph = nx.Graph()
-
-    tupled_intervals = [(i,) + tuple(interval) for i, interval in enumerate(intervals)]
-    graph.add_nodes_from(tupled_intervals)
-
-    while tupled_intervals:
-        i, min1, max1 = interval1 = tupled_intervals.pop()
-        for interval2 in tupled_intervals:
-            j, min2, max2 = interval2
-            if families[i] == families[j]:
+    for i in list(graph):
+        min1, max1 = graph.nodes[i]["interval"]
+        for j in list(graph)[i+1:]:
+            min2, max2 = graph.nodes[j]["interval"]
+            if filter_func is None or filter_func(i, j):
                 if max1 >= min2 and max2 >= min1:
-                    graph.add_edge(interval1, interval2)
+                    graph.add_edge(i, j)
 
     return graph

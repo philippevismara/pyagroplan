@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from abc import ABC, abstractmethod
 
-from interval_graph import interval_graph_rotation
+from interval_graph import interval_graph
 
 
 class Constraint(ABC):
@@ -29,15 +29,16 @@ class CropsRotationConstraint(Constraint):
 
         intervals = self.crops_calendar.crops_calendar[:, 1:].astype(int)
         intervals[:, -1] += self.return_delay
-        self.interval_graph = interval_graph_rotation(list(map(list, intervals)), self.families)
+        self.interval_graph = interval_graph(
+            list(map(list, intervals)),
+            filter_func=lambda i,j: self.families[i] == self.families[j],
+        )
 
     def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for node_i in self.interval_graph:
-            i, *_ = node_i
-            for node_j in self.interval_graph.neighbors(node_i):
-                j, *_ = node_j
+        for i in self.interval_graph:
+            for j in self.interval_graph.neighbors(i):
                 constraints.append(
                     model.arithm(assignment_vars[i], "!=", assignment_vars[j])
                 )
