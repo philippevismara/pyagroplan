@@ -27,7 +27,7 @@ class CropsRotationConstraint(Constraint):
         self.return_delay = self.crops_calendar.df_assignments["delai_retour"].values
         self.families = self.crops_calendar.df_assignments["famille"].values
 
-        intervals = self.crops_calendar.crops_calendar[:, 1:].astype(int)
+        intervals = self.crops_calendar.crops_calendar[:, 1:3]
         intervals[:, -1] += self.return_delay
         self.interval_graph = interval_graph(
             list(map(list, intervals)),

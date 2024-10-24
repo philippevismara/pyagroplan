@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from typing import Any
 
     from pychoco.variables.intvar import IntVar
 
@@ -21,7 +22,7 @@ class Solution:
         # TODO self.variables = choco_solution.retrieveIntVars()
 
         self.crops_planning = pd.DataFrame({
-            "crops_names": self.crops_calendar.crops_names,
+            "crop_name": self.crops_calendar.crops_names,
             "assignment": self.variables_values
         })
 
@@ -31,5 +32,9 @@ class Solution:
     def __str__(self) -> str:
         return "Solution:\n{}".format(self.crops_planning)
 
-    def to_csv(self, filename: str) -> None:
-        raise NotImplementedError()
+    def to_csv(self, filename: str, **kwargs: Any) -> None:
+        kwargs = {
+            "index": False,
+            "sep": ";",
+        } | kwargs
+        self.crops_planning.to_csv(filename, **kwargs)
