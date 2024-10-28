@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 
 class BedsData:
     def __init__(self, df_beds_data: pd.DataFrame):
         self.df_beds_data = df_beds_data.copy()
+        self.beds_ids = np.asarray(df_beds_data.index.array).tolist()
         self.adjacency_matrix = self.df_beds_data["adjacent_beds_ids"]
 
         def adjacency_function(i: int, j: int) -> bool:

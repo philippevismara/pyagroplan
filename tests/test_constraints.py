@@ -116,3 +116,61 @@ def test_crops_rotation_constraint(crops_calendar, beds_data):
         crops_planning = solution.crops_planning["assignment"]
 
         assert len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
+
+
+def test_unitary_crops_beds_constraint(crops_calendar, beds_data):
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    def beds_selection_func(crops_calendar, beds_data):
+        df_crops = crops_calendar.df_assignments
+        df_beds = beds_data.df_beds_data
+        beds_ids = np.asarray(beds_data.beds_ids)
+
+        selected_beds = []
+        for _, row in df_crops.iterrows():
+            match row["besoin_lumiere"]:
+                case "ombre":
+                    crop_selected_beds = beds_ids[
+                        (df_beds["ombre_ete"] == "oui")
+                        & (df_beds["ombre_hiver"] == "oui")
+                    ]
+                case "mi-ombre":
+                    crop_selected_beds = beds_ids[
+                        df_beds["ombre_ete"] != df_beds["ombre_hiver"]
+                    ]
+                case "soleil":
+                    crop_selected_beds = beds_ids[
+                        (df_beds["ombre_ete"] == "non")
+                        & (df_beds["ombre_hiver"] == "non")
+                    ]
+                case _:
+                    crop_selected_beds = []
+            selected_beds.append(np.asarray(crop_selected_beds).tolist())
+
+        return selected_beds
+
+    constraint = cstrs.UnitaryCropsBedsConstraint(
+        crops_calendar,
+        beds_data,
+        beds_selection_func,
+        forbidden=False,
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"]
+
+        # Tomatos in the sun
+        assert crops_planning[3] in [3, 6]
+        assert crops_planning[4] in [3, 6]
+
+        # Potatoes and carrots in sun/shade
+        assert crops_planning[0] in [2, 4, 5]
+        assert crops_planning[1] in [2, 4, 5]
+        assert crops_planning[2] in [2, 4, 5]
+        assert crops_planning[5] in [2, 4, 5]
+        assert crops_planning[6] in [2, 4, 5]

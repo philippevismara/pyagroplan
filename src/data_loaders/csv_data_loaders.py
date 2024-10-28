@@ -48,11 +48,15 @@ class CSVBedsDataLoader(CSVDataLoader):
             index_col="planche",
             comment="#",
         )
-        df_beds_data.rename(columns={
-            "planche": "bed_id",
-            "planche_contact": "adjacent_beds_ids",
-            "jardin": "garden_id",
-        }, inplace=True)
+        df_beds_data.index.name = "bed_id"
+        df_beds_data.rename(
+            columns={
+                "planche": "bed_id",
+                "planche_contact": "adjacent_beds_ids",
+                "jardin": "garden_id",
+            },
+            inplace=True,
+        )
         return df_beds_data
 
     @classmethod

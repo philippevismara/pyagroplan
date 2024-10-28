@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, no_type_check
 
 if TYPE_CHECKING:
+    from typing import Callable
     from collections.abc import Sequence
 
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
@@ -20,6 +21,34 @@ class Constraint(ABC):
     @abstractmethod
     def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence: ...
 
+
+class UnitaryCropsBedsConstraint(Constraint):
+    def __init__(
+            self,
+            crops_calendar: CropsCalendar,
+            beds_data: BedsData,
+            beds_selection_func: Callable[[CropsCalendar, BedsData], Sequence[Sequence[int]]],
+            forbidden: bool = True,
+    ):
+        self.crops_calendar = crops_calendar
+        self.beds_data = beds_data
+        self.beds_selection_func = beds_selection_func
+        self.forbidden = forbidden
+
+    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+        constraints = []
+
+        selected_beds = self.beds_selection_func(self.crops_calendar, self.beds_data)
+        for crop_var, crop_selected_beds in zip(assignment_vars, selected_beds):
+            if len(crop_selected_beds) > 0:
+                if self.forbidden:
+                    crop_constraints = model.not_member(crop_var, crop_selected_beds)
+                else:
+                    crop_constraints = model.member(crop_var, crop_selected_beds)
+
+                constraints.append(crop_constraints)
+
+        return constraints
 
 class CropsRotationConstraint(Constraint):
     def __init__(self, crops_calendar: CropsCalendar):
