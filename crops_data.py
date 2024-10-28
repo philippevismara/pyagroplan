@@ -10,19 +10,34 @@ import pandas as pd
 N_WEEKS_PER_YEAR = 52
 
 
-class CropsDataLoader:
+class CSVCropsDataLoader:
     @staticmethod
     def load(metadata_filename: str, interactions_filename: str) -> CropsData:
         df_metadata = pd.read_csv(
             metadata_filename,
             sep=";",
             index_col="culture",
+            comment="#",
         )
+        df_metadata.rename(columns={
+            "culture": "crop_name",
+            "famille": "crop_family",
+            "delai_retour": "return_delay",
+        }, inplace=True)
+
+        # TODO fix the data instead
+        df_metadata["return_delay"] = df_metadata["return_delay"] * N_WEEKS_PER_YEAR
+
         df_interactions = pd.read_csv(
             interactions_filename,
             sep=";",
             index_col="culture",
+            comment="#",
         )
+        df_interactions.rename(columns={
+            "culture": "crop_name",
+        }, inplace=True)
+
         return CropsData(df_metadata, df_interactions)
 
 
@@ -32,9 +47,6 @@ class CropsData:
         self.df_interactions = df_crops_interactions.copy()
 
         self.n_crops = len(self.df_metadata)
-
-        # TODO fix the data instead
-        self.df_metadata["delai_retour"] = self.df_metadata["delai_retour"] * N_WEEKS_PER_YEAR
 
         def crops_interactions(crop_i: str, crop_j: str) -> Any:
             return self.df_interactions.loc[crop_i, crop_j]

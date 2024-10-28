@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from beds_data import BedsData, BedsDataLoader
+from beds_data import BedsData, CSVBedsDataLoader
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 DATA_PATH = CURRENT_DIR / "data"
@@ -16,14 +16,14 @@ def df_beds_data():
             [2, (1, 3)],
             [3, (2,)],
         ],
-        columns=["planche", "planche_contact"],
+        columns=["bed_id", "adjacent_beds_ids"],
     )
-    df_beds_data.set_index("planche", inplace=True)
+    df_beds_data.set_index("bed_id", inplace=True)
     return df_beds_data
 
 
 def test_beds_loader(df_beds_data):
-    beds_data = BedsDataLoader.load(DATA_PATH / "beds_data.csv")
+    beds_data = CSVBedsDataLoader.load(DATA_PATH / "beds_data.csv")
     assert (beds_data.df_beds_data == df_beds_data).all(axis=None)
 
 

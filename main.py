@@ -1,9 +1,9 @@
 import argparse
 
 import constraints as cstrs
-from beds_data import BedsDataLoader
-from crops_calendar import CropsCalendarLoader
-from crops_data import CropsDataLoader
+from beds_data import CSVBedsDataLoader
+from crops_calendar import CSVCropsCalendarLoader
+from crops_data import CSVCropsDataLoader
 from model import AgroEcoPlanModel
 
 
@@ -46,10 +46,10 @@ if __name__ == "__main__":
 
     crops_data = None
     if args.crops_metadata_path and args.crops_interactions_path:
-        crops_data = CropsDataLoader.load(args.crops_metadata_path, args.crops_interactions_path)
+        crops_data = CSVCropsDataLoader.load(args.crops_metadata_path, args.crops_interactions_path)
 
-    crops_calendar = CropsCalendarLoader.load(args.crops_calendar_path, crops_data)
-    beds_data = BedsDataLoader.load(args.beds_data_path)
+    crops_calendar = CSVCropsCalendarLoader.load(args.crops_calendar_path, crops_data)
+    beds_data = CSVBedsDataLoader.load(args.beds_data_path)
 
     constraints = [
         cstrs.CropsRotationConstraint(crops_calendar),

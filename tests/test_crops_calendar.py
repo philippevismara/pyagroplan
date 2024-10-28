@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from crops_calendar import CropsCalendar, CropsCalendarLoader
+from crops_calendar import CropsCalendar, CSVCropsCalendarLoader
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 DATA_PATH = CURRENT_DIR / "data"
@@ -18,13 +18,13 @@ def df_crops_calendar():
             ["pomme_de_terre", 8, 12, 1],
             ["carotte", 10, 12, 1],
         ],
-        columns=["culture", "debut", "fin", "quantite"],
+        columns=["crop_name", "starting_week", "ending_week", "allocated_beds_quantity"],
     )
     return df_crops_calendar
 
 
 def test_crops_calendar_loader(df_crops_calendar):
-    crops_calendar = CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
+    crops_calendar = CSVCropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
 
     assert (crops_calendar.df_crops_calendar == df_crops_calendar).all(axis=None)
 

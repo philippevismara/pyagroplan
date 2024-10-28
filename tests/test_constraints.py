@@ -4,9 +4,9 @@ from pathlib import Path
 import numpy as np
 
 import constraints as cstrs
-from beds_data import BedsDataLoader
-from crops_calendar import CropsCalendarLoader
-from crops_data import CropsDataLoader
+from beds_data import CSVBedsDataLoader
+from crops_calendar import CSVCropsCalendarLoader
+from crops_data import CSVCropsDataLoader
 from model import AgroEcoPlanModel
 
 
@@ -16,12 +16,12 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def beds_data():
-    return BedsDataLoader.load(DATA_PATH / "beds_data_normal.csv")
+    return CSVBedsDataLoader.load(DATA_PATH / "beds_data_normal.csv")
 
 
 @pytest.fixture
 def crops_data():
-    return CropsDataLoader.load(
+    return CSVCropsDataLoader.load(
         DATA_PATH / "crops_metadata.csv",
         DATA_PATH / "crops_interactions.csv",
     )
@@ -29,7 +29,7 @@ def crops_data():
 
 @pytest.fixture
 def crops_calendar(crops_data):
-    return CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv", crops_data)
+    return CSVCropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv", crops_data)
 
 
 def test_abstract_constraint():

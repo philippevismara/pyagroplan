@@ -11,13 +11,24 @@ import numpy as np
 import pandas as pd
 
 
-class CropsCalendarLoader:
+class CSVCropsCalendarLoader:
     @staticmethod
     def load(filename: str, crops_data: Optional[CropsData]=None) -> CropsCalendar:
-        df = pd.read_csv(filename, sep=";")
-        df_crop_calendar = df[["culture", "debut", "fin", "quantite"]]
-        crop_calendar = CropsCalendar(df_crop_calendar, crops_data)
-        return crop_calendar
+        df = pd.read_csv(filename, sep=";", comment="#")
+        df_crops_calendar = df[["culture", "debut", "fin", "quantite"]]
+
+        # TODO fix the data instead
+        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.lower()
+        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.replace(" ", "_")
+
+        df_crops_calendar.rename(columns={
+            "culture": "crop_name",
+            "debut": "starting_week",
+            "fin": "ending_week",
+            "quantite": "allocated_beds_quantity",
+        }, inplace=True)
+        crops_calendar = CropsCalendar(df_crops_calendar, crops_data)
+        return crops_calendar
 
 
 class CropsCalendar:
@@ -25,28 +36,24 @@ class CropsCalendar:
         self.df_crops_calendar = df_crops_calendar.copy()
         self.crops_data = crops_data
 
-        # TODO fix the data instead
-        self.df_crops_calendar["culture"] = df_crops_calendar["culture"].str.lower()
-        self.df_crops_calendar["culture"] = self.df_crops_calendar["culture"].str.replace(" ", "_")
-
         if self.crops_data is not None:
             self.df_crops_calendar = pd.merge(
                 self.df_crops_calendar,
                 self.crops_data.df_metadata,
                 how="left",
-                left_on="culture",
+                left_on="crop_name",
                 right_index=True,
             )
 
         df = self.df_crops_calendar
-        repeats = df["quantite"].values.astype(int)
+        repeats = df["allocated_beds_quantity"].values.astype(int)
         self.crops_groups = np.repeat(df.index.values, repeats)
         df = df.loc[self.crops_groups]
         self.crops_groups_assignments = np.split(np.arange(len(df)), np.cumsum(repeats)[:-1])
-        df.drop(columns="quantite", inplace=True)
-        self.crops_calendar = df[["culture", "debut", "fin"]].values
+        df.drop(columns="allocated_beds_quantity", inplace=True)
+        self.crops_calendar = df[["crop_name", "starting_week", "ending_week"]].values
 
-        self.crops_names = df["culture"].array
+        self.crops_names = df["crop_name"].array
 
         self.df_assignments = df
 

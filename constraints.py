@@ -24,8 +24,8 @@ class Constraint(ABC):
 class CropsRotationConstraint(Constraint):
     def __init__(self, crops_calendar: CropsCalendar):
         self.crops_calendar = crops_calendar
-        self.return_delay = self.crops_calendar.df_assignments["delai_retour"].values
-        self.families = self.crops_calendar.df_assignments["famille"].values
+        self.return_delay = self.crops_calendar.df_assignments["return_delay"].values
+        self.families = self.crops_calendar.df_assignments["crop_family"].values
 
         intervals = self.crops_calendar.crops_calendar[:, 1:3]
         intervals[:, -1] += self.return_delay
@@ -172,7 +172,7 @@ class DiluteSpeciesConstraint(AdjacencyConstraint):
 class DiluteFamilyConstraint(AdjacencyConstraint):
     def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
         super().__init__(crops_calendar, beds_data, forbid=True)
-        self.crops_families = crops_calendar.df_assignments["famille"].array
+        self.crops_families = crops_calendar.df_assignments["crop_family"].array
 
     def selection_function(self, i: int, j: int) -> bool:
         return self.crops_families[i] == self.crops_families[j] # type: ignore[no-any-return]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 
-class BedsDataLoader:
+class CSVBedsDataLoader:
     @staticmethod
     def load(filename: str) -> BedsData:
         def list_converter(s: str) -> tuple[int,...]:
@@ -14,15 +14,20 @@ class BedsDataLoader:
             else:
                 return tuple(map(int, str_list))
 
-        df = pd.read_csv(
+        df_beds_data = pd.read_csv(
             filename,
             sep=";",
             converters={
                 "planche_contact": list_converter
             },
             index_col="planche",
+            comment="#",
         )
-        df_beds_data = df[["planche_contact"]]
+        df_beds_data.rename(columns={
+            "planche": "bed_id",
+            "planche_contact": "adjacent_beds_ids",
+            "jardin": "garden_id",
+        }, inplace=True)
         beds_data = BedsData(df_beds_data)
         return beds_data
 
@@ -30,7 +35,7 @@ class BedsDataLoader:
 class BedsData:
     def __init__(self, df_beds_data: pd.DataFrame):
         self.df_beds_data = df_beds_data.copy()
-        self.adjacency_matrix = self.df_beds_data["planche_contact"]
+        self.adjacency_matrix = self.df_beds_data["adjacent_beds_ids"]
 
         def adjacency_function(i: int, j: int) -> bool:
             return j in self.adjacency_matrix.loc[i]

@@ -4,8 +4,8 @@ from pathlib import Path
 
 from model import AgroEcoPlanModel
 
-from beds_data import BedsDataLoader
-from crops_calendar import CropsCalendarLoader
+from beds_data import CSVBedsDataLoader
+from crops_calendar import CSVCropsCalendarLoader
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -14,12 +14,12 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def beds_data(beds_data_csv_filename):
-    return BedsDataLoader.load(DATA_PATH / beds_data_csv_filename)
+    return CSVBedsDataLoader.load(DATA_PATH / beds_data_csv_filename)
 
 
 @pytest.fixture
 def crops_calendar():
-    return CropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
+    return CSVCropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv")
 
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data.csv"])
