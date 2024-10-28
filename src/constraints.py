@@ -7,13 +7,13 @@ if TYPE_CHECKING:
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
     from pychoco.variables.intvar import IntVar
 
-    from beds_data import BedsData
-    from crops_calendar import CropsCalendar
-    from model import Model
+    from .beds_data import BedsData
+    from .crops_calendar import CropsCalendar
+    from .model import Model
 
 from abc import ABC, abstractmethod
 
-from interval_graph import interval_graph
+from .interval_graph import interval_graph
 
 
 class Constraint(ABC):

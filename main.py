@@ -1,10 +1,8 @@
 import argparse
 
-import constraints as cstrs
-from beds_data import CSVBedsDataLoader
-from crops_calendar import CSVCropsCalendarLoader
-from crops_data import CSVCropsDataLoader
-from model import AgroEcoPlanModel
+from src import constraints as cstrs
+from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
+from src.model import AgroEcoPlanModel
 
 
 if __name__ == "__main__":

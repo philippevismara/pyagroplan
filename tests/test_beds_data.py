@@ -2,7 +2,8 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from beds_data import BedsData, CSVBedsDataLoader
+from src.beds_data import BedsData
+from src.data_loaders import CSVBedsDataLoader
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 DATA_PATH = CURRENT_DIR / "data"

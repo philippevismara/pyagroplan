@@ -5,15 +5,17 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Generator
 
-    from beds_data import BedsData
-    from constraints import Constraint
-    from crops_calendar import CropsCalendar
-    from solution import Solution
+    from pychoco.variables.intvar import IntVar
+
+    from .beds_data import BedsData
+    from .constraints import Constraint
+    from .crops_calendar import CropsCalendar
+    from .solution import Solution
 
 import numpy as np
 from pychoco import Model
 
-from solution import Solution
+from .solution import Solution
 
 
 class AgroEcoPlanModel:
@@ -50,6 +52,9 @@ class AgroEcoPlanModel:
         constraints = constraint.build(self.model, self.assignment_vars)
         for cstr in constraints:
             cstr.post()
+
+    def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
+        self.model.set_objective(variable, maximize)
 
     def configure_solver(self) -> None:
         # TODO allow to configurate solver

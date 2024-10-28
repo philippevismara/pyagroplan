@@ -3,11 +3,9 @@ from pathlib import Path
 
 import numpy as np
 
-import constraints as cstrs
-from beds_data import CSVBedsDataLoader
-from crops_calendar import CSVCropsCalendarLoader
-from crops_data import CSVCropsDataLoader
-from model import AgroEcoPlanModel
+from src import constraints as cstrs
+from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
+from src.model import AgroEcoPlanModel
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()

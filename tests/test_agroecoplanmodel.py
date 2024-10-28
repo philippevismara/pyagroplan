@@ -2,10 +2,8 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from model import AgroEcoPlanModel
-
-from beds_data import CSVBedsDataLoader
-from crops_calendar import CSVCropsCalendarLoader
+from src.model import AgroEcoPlanModel
+from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()

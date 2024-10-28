@@ -3,7 +3,8 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from crops_calendar import CropsCalendar, CSVCropsCalendarLoader
+from src.crops_calendar import CropsCalendar
+from src.data_loaders import CSVCropsCalendarLoader
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 DATA_PATH = CURRENT_DIR / "data"

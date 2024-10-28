@@ -4,31 +4,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional
 
-    from crops_data import CropsData
+    from .crops_data import CropsData
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
-
-class CSVCropsCalendarLoader:
-    @staticmethod
-    def load(filename: str, crops_data: Optional[CropsData]=None) -> CropsCalendar:
-        df = pd.read_csv(filename, sep=";", comment="#")
-        df_crops_calendar = df[["culture", "debut", "fin", "quantite"]]
-
-        # TODO fix the data instead
-        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.lower()
-        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.replace(" ", "_")
-
-        df_crops_calendar.rename(columns={
-            "culture": "crop_name",
-            "debut": "starting_week",
-            "fin": "ending_week",
-            "quantite": "allocated_beds_quantity",
-        }, inplace=True)
-        crops_calendar = CropsCalendar(df_crops_calendar, crops_data)
-        return crops_calendar
+from .interval_graph import interval_graph
 
 
 class CropsCalendar:
@@ -59,7 +41,6 @@ class CropsCalendar:
 
         self.n_assignments = len(self.crops_calendar)
 
-        from interval_graph import interval_graph
         self._interval_graph = interval_graph(list(map(list, self.crops_calendar[:,1:].astype(int))))
         self.crops_overlapping_cultivation_intervals = frozenset(
             frozenset(node for node in clique)
