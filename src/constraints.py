@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from typing import Callable
     from collections.abc import Sequence
 
+    import pandas as pd
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
     from pychoco.variables.intvar import IntVar
 
@@ -27,7 +28,7 @@ class UnitaryCropsBedsConstraint(Constraint):
             self,
             crops_calendar: CropsCalendar,
             beds_data: BedsData,
-            beds_selection_func: Callable[[CropsCalendar, BedsData], Sequence[Sequence[int]]],
+            beds_selection_func: Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]],
             forbidden: bool = True,
     ):
         self.crops_calendar = crops_calendar
@@ -38,9 +39,12 @@ class UnitaryCropsBedsConstraint(Constraint):
     def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        selected_beds = self.beds_selection_func(self.crops_calendar, self.beds_data)
-        for crop_var, crop_selected_beds in zip(assignment_vars, selected_beds):
+        for crop_var, (_, crop_data) in zip(assignment_vars, self.crops_calendar.df_assignments.iterrows()):
+            crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
+
             if len(crop_selected_beds) > 0:
+                crop_selected_beds = list(map(int, crop_selected_beds))
+
                 if self.forbidden:
                     crop_constraints = model.not_member(crop_var, crop_selected_beds)
                 else:

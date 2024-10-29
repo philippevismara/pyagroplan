@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import pandas as pd
 
-from .utils import dispatch_to_appropriate_loader
+from .utils import convert_string_to_int_list, dispatch_to_appropriate_loader
 
 from ..beds_data import BedsData
 from ..crops_calendar import CropsCalendar
@@ -31,19 +31,11 @@ class CSVBedsDataLoader(CSVDataLoader):
 
     @staticmethod
     def _load_v0_0_1(filename: str) -> pd.DataFrame:
-        def list_converter(s: str) -> tuple[int,...]:
-            str_list = s.split(",")
-
-            if len(str_list) == 0 or len(str_list[0]) == 0:
-                return tuple()
-            else:
-                return tuple(map(int, str_list))
-
         df_beds_data = pd.read_csv(
             filename,
             sep=";",
             converters={
-                "planche_contact": list_converter
+                "planche_contact": convert_string_to_int_list,
             },
             index_col="planche",
             comment="#",
@@ -61,19 +53,11 @@ class CSVBedsDataLoader(CSVDataLoader):
 
     @staticmethod
     def _load_v0_0_2(filename: str) -> pd.DataFrame:
-        def list_converter(s: str) -> tuple[int,...]:
-            str_list = s.split(",")
-
-            if len(str_list) == 0 or len(str_list[0]) == 0:
-                return tuple()
-            else:
-                return tuple(map(int, str_list))
-
         df_beds_data = pd.read_csv(
             filename,
             sep=";",
             converters={
-                "adjacent_beds_ids": list_converter
+                "adjacent_beds_ids": convert_string_to_int_list,
             },
             index_col="bed_id",
             comment="#",
@@ -120,12 +104,15 @@ class CSVCropsCalendarLoader(CSVDataLoader):
             sep=";",
             comment="#",
         )
+        """
         df_crops_calendar = df[[
             "crop_name",
             "starting_week",
             "ending_week",
             "allocated_beds_quantity"
         ]]
+        """
+        df_crops_calendar = df
         return df_crops_calendar
 
     @classmethod

@@ -8,6 +8,20 @@ if TYPE_CHECKING:
 import warnings
 
 
+def convert_string_to_int_list(s: str) -> tuple[int,...]:
+    if isinstance(s, float):
+        s = str(s)
+        if s == "nan":
+            return []
+
+    str_list = s.split(",")
+
+    if len(str_list) == 0 or len(str_list[0]) == 0:
+        return tuple()
+    else:
+        return tuple(map(int, str_list))
+
+
 def read_csv_metadata(filename: str, comment: str="#") -> dict:
     metadata = {}
 

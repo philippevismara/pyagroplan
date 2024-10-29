@@ -121,33 +121,27 @@ def test_crops_rotation_constraint(crops_calendar, beds_data):
 def test_unitary_crops_beds_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    def beds_selection_func(crops_calendar, beds_data):
-        df_crops = crops_calendar.df_assignments
+    def beds_selection_func(crop_data, beds_data):
         df_beds = beds_data.df_beds_data
         beds_ids = np.asarray(beds_data.beds_ids)
 
-        selected_beds = []
-        for _, row in df_crops.iterrows():
-            match row["besoin_lumiere"]:
-                case "ombre":
-                    crop_selected_beds = beds_ids[
-                        (df_beds["ombre_ete"] == "oui")
-                        & (df_beds["ombre_hiver"] == "oui")
-                    ]
-                case "mi-ombre":
-                    crop_selected_beds = beds_ids[
-                        df_beds["ombre_ete"] != df_beds["ombre_hiver"]
-                    ]
-                case "soleil":
-                    crop_selected_beds = beds_ids[
-                        (df_beds["ombre_ete"] == "non")
-                        & (df_beds["ombre_hiver"] == "non")
-                    ]
-                case _:
-                    crop_selected_beds = []
-            selected_beds.append(np.asarray(crop_selected_beds).tolist())
-
-        return selected_beds
+        match crop_data["besoin_lumiere"]:
+            case "ombre":
+                return beds_ids[
+                    (df_beds["ombre_ete"] == "oui")
+                    & (df_beds["ombre_hiver"] == "oui")
+                ]
+            case "mi-ombre":
+                return beds_ids[
+                    df_beds["ombre_ete"] != df_beds["ombre_hiver"]
+                ]
+            case "soleil":
+                return beds_ids[
+                    (df_beds["ombre_ete"] == "non")
+                    & (df_beds["ombre_hiver"] == "non")
+                ]
+            case _:
+                return []
 
     constraint = cstrs.UnitaryCropsBedsConstraint(
         crops_calendar,

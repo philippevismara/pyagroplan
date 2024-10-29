@@ -49,8 +49,15 @@ if __name__ == "__main__":
     crops_calendar = CSVCropsCalendarLoader.load(args.crops_calendar_path, crops_data)
     beds_data = CSVBedsDataLoader.load(args.beds_data_path)
 
+    from src.data_loaders.utils import convert_string_to_int_list
     constraints = [
         cstrs.CropsRotationConstraint(crops_calendar),
+        cstrs.UnitaryCropsBedsConstraint(
+            crops_calendar,
+            beds_data,
+            beds_selection_func=lambda crop_data, _: convert_string_to_int_list(crop_data["forbidden_beds"]),
+            forbidden=True,
+        ),
         # cstrs.DiluteSpeciesConstraint(crops_calendar, beds_data),
     ]
 
