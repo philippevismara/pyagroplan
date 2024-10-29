@@ -31,7 +31,6 @@ class AgroEcoPlanModel:
         TODO add fixed domains (pre-allocated beds) + forbidden beds
         can't we add constraints instead? (less efficient?)
         """
-        #self.assignment_vars = self.model.intvars(self.n_assignments, 1, self.n_beds, name="a")
         self.assignment_vars = self.model.intvars(self.n_assignments, self.beds_data.beds_ids, name="a")
         self.assignment_vars = np.asarray(self.assignment_vars)
 

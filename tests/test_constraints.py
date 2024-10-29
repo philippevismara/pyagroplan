@@ -118,6 +118,28 @@ def test_crops_rotation_constraint(crops_calendar, beds_data):
         assert len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
 
 
+def test_group_identical_crops_together_constraint(crops_calendar, beds_data):
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    constraint = cstrs.GroupIdenticalCropsTogetherConstraint(
+        crops_calendar,
+        beds_data,
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"]
+
+        assert beds_data.adjacency_function(crops_planning[0], crops_planning[1])
+        assert beds_data.adjacency_function(crops_planning[1], crops_planning[2])
+
+        assert beds_data.adjacency_function(crops_planning[3], crops_planning[4])
+
+
 def test_unitary_crops_beds_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 

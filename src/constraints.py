@@ -211,14 +211,45 @@ class DiluteFamilyConstraint(AdjacencyConstraint):
         return self.crops_families[i] == self.crops_families[j] # type: ignore[no-any-return]
 
 
-class GroupIdenticalCropsConstraint(Constraint):
-    @no_type_check
-    def __init__(self):
-        raise NotImplementedError()
+class GroupIdenticalCropsTogetherConstraint(Constraint):
+    def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
+        self.crops_calendar = crops_calendar
+        self.beds_data = beds_data
 
     def build(self, model: Model, assignment_variables: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
-        raise NotImplementedError()
+        constraints = []
 
+        for group in self.crops_calendar.crops_groups_assignments:
+            # TODO remove len(group) == 1
+            assert len(group) > 0
+            """
+            if len(group) == 1:
+                continue
+            """
+
+            # TODO assumes first element in group is lowest crop_id
+            a_i = assignment_variables[group[0]]
+            group_assignment_vars = [assignment_variables[i] for i in group]
+
+            # TODO assumes that adjacent beds have adjacent indices
+            allowed_tuples = []
+            for val1 in a_i.get_domain_values():
+                possible_tuple = True
+                for i in range(val1 + 1, val1 + len(group)):
+                    if i not in self.beds_data.adjacency_matrix[i-1]:
+                        possible_tuple = False
+                        break
+
+                if possible_tuple:
+                    allowed_tuples.append(
+                        list(range(val1, val1 + len(group)))
+                    )
+
+            constraints.append(
+                model.table(group_assignment_vars, allowed_tuples, feasible=True)
+            )
+
+        return constraints
 
 """
 TODO handle optimization objective
