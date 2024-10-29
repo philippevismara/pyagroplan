@@ -1,7 +1,7 @@
 # description:
 # data_version: 1
-# format_version: 0.0.1
-culture;ail;arbre_fruitier;artichaut;aubergine;autre;basilic;betterave;blette;brocoli;carotte;celeri;chou;concombre;courge;courgette;engrais_vert;epinard;fenouil;feve;fraise;haricot;melon;navet;oignon;persil;petit_pois;poireau;poivron;pomme_de_terre;radis;rhubarbe;salade;tomate
+# format_version: 0.0.2
+crop_name;ail;arbre_fruitier;artichaut;aubergine;autre;basilic;betterave;blette;brocoli;carotte;celeri;chou;concombre;courge;courgette;engrais_vert;epinard;fenouil;feve;fraise;haricot;melon;navet;oignon;persil;petit_pois;poireau;poivron;pomme_de_terre;radis;rhubarbe;salade;tomate
 ail;0;1;-1;-1;0;0;1;1;-1;1;1;-1;1;0;0;0;1;1;-1;1;-1;0;0;1;-1;-1;-1;0;1;1;1;1;1
 arbre_fruitier;1;0;0;0;0;0;0;1;0;1;0;0;0;0;0;0;1;0;0;1;0;0;0;1;0;0;0;0;0;0;0;0;0
 artichaut;-1;0;0;1;0;0;0;0;1;0;0;1;0;0;0;0;0;0;1;0;0;0;0;1;1;1;1;0;-1;1;0;1;1

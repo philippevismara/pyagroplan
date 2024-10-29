@@ -1,7 +1,7 @@
 # description: Small test case
 # data_version: 1
-# format_version: 0.0.1
-planche;planche_contact
+# format_version: 0.0.2
+bed_id;adjacent_beds_ids
 1;2
 2;1,3
 3;2

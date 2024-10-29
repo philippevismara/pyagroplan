@@ -1,8 +1,8 @@
 # description: Small test case
 # data_version: 1
-# format_version: 0.0.1
-culture;debut;fin;quantite
-Carotte;1;5;3
-Tomate;3;9;2
-Pomme de terre;8;12;1
-Carotte;10;12;1
+# format_version: 0.0.2
+crop_name;starting_week;ending_week;allocated_beds_quantity
+carotte;1;5;3
+tomate;3;9;2
+pomme_de_terre;8;12;1
+carotte;10;12;1

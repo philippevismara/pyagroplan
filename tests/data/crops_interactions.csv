@@ -1,7 +1,7 @@
 # description: Small test case
 # data_version: 1
-# format_version: 0.0.1
-culture;carotte;pomme_de_terre;tomate
+# format_version: 0.0.2
+crop_name;carotte;pomme_de_terre;tomate
 carotte;0;1;1
 pomme_de_terre;1;0;-1
 tomate;1;-1;0

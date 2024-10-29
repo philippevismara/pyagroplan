@@ -59,6 +59,28 @@ class CSVBedsDataLoader(CSVDataLoader):
         )
         return df_beds_data
 
+    @staticmethod
+    def _load_v0_0_2(filename: str) -> pd.DataFrame:
+        def list_converter(s: str) -> tuple[int,...]:
+            str_list = s.split(",")
+
+            if len(str_list) == 0 or len(str_list[0]) == 0:
+                return tuple()
+            else:
+                return tuple(map(int, str_list))
+
+        df_beds_data = pd.read_csv(
+            filename,
+            sep=";",
+            converters={
+                "adjacent_beds_ids": list_converter
+            },
+            index_col="bed_id",
+            comment="#",
+        )
+
+        return df_beds_data
+
     @classmethod
     def load(cls, filename: str) -> BedsData:
         df_beds_data = dispatch_to_appropriate_loader(filename, cls)
@@ -143,6 +165,28 @@ class CSVCropsDataLoader(CSVDataLoader):
         df_interactions.rename(columns={
             "culture": "crop_name",
         }, inplace=True)
+
+        return (df_metadata, df_interactions)
+
+    @staticmethod
+    def _load_v0_0_2(filenames: Sequence[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+        metadata_filename, interactions_filename = filenames
+        df_metadata = pd.read_csv(
+            metadata_filename,
+            sep=";",
+            index_col="crop_name",
+            comment="#",
+        )
+
+        # TODO fix the data instead
+        df_metadata["return_delay"] = df_metadata["return_delay"] * N_WEEKS_PER_YEAR
+
+        df_interactions = pd.read_csv(
+            interactions_filename,
+            sep=";",
+            index_col="crop_name",
+            comment="#",
+        )
 
         return (df_metadata, df_interactions)
 

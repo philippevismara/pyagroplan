@@ -1,7 +1,7 @@
 # description:
 # data_version: 1
-# format_version: 0.0.1
-culture;famille;delai_retour;exigeante;salissante;prof_enracinement;besoin_lumiere;exigence_de_soins;surveillance;aspersion;besoins_goute_a_goute
+# format_version: 0.0.2
+crop_name;crop_family;return_delay;exigeante;salissante;prof_enracinement;besoin_lumiere;exigence_de_soins;surveillance;aspersion;besoins_goute_a_goute
 Ail;aliacees;4;oui;oui;1;mi-ombre;;;;
 Artichaut;asteracees;8;non;non;3;soleil;non;;;
 Aubergine;solanacees;4;oui;non;2;soleil;oui;;;2
