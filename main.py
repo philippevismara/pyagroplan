@@ -2,7 +2,7 @@ import argparse
 
 from src import constraints as cstrs
 from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
-from src.model import AgroEcoPlanModel
+from src.model import AgroEcoPlanModel, available_search_strategies
 
 
 if __name__ == "__main__":
@@ -35,11 +35,19 @@ if __name__ == "__main__":
         help="path to crops interactions CSV file",
     )
     parser.add_argument(
+        "--search_strategy",
+        type=str,
+        choices=available_search_strategies.keys(),
+        default="default",
+        help="which search strategy to use",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
     )
 
     args = parser.parse_args()
+    search_strategy = args.search_strategy
     verbose = args.verbose
 
     crops_data = None
@@ -68,6 +76,7 @@ if __name__ == "__main__":
     ]
 
     # Scenario 3
+    """
     from src.data_loaders.utils import convert_string_to_int_list
     constraints = [
         cstrs.UnitaryCropsBedsConstraint(
@@ -78,8 +87,7 @@ if __name__ == "__main__":
         ),
         cstrs.GroupIdenticalCropsTogetherConstraint(crops_calendar, beds_data),
     ]
-
-
+    """
 
     print(crops_calendar)
     print(beds_data)
@@ -87,9 +95,10 @@ if __name__ == "__main__":
 
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose)
     model.init(constraints)
-    model.configure_solver()
+    model.configure_solver(search_strategy)
     print(model)
 
+    model.solver.show_short_statistics()
     solution = model.solve()
     print(solution)
 

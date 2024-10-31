@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import Generator
+    from typing import Callable, Generator
 
     from pychoco.variables.intvar import IntVar
 
@@ -14,8 +14,29 @@ if TYPE_CHECKING:
 
 import numpy as np
 from pychoco import Model
+from pychoco.solver import Solver as ChocoSolver
 
 from .solution import Solution
+
+
+def _get_available_search_strategies() -> dict[str, Callable]:
+    methods = [
+        (method_name, getattr(ChocoSolver, method_name))
+        for method_name in dir(ChocoSolver)
+        if callable(getattr(ChocoSolver, method_name))
+    ]
+
+    available_search_strategies = {}
+    for method_name, method_func in methods:
+        import re
+        match = re.fullmatch(r"^set_(.*)_search$", method_name)
+        if match:
+            search_name = match[1]
+            available_search_strategies[search_name] = method_func
+
+    return available_search_strategies
+
+available_search_strategies = _get_available_search_strategies()
 
 
 class AgroEcoPlanModel:
@@ -56,9 +77,14 @@ class AgroEcoPlanModel:
     def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
         self.model.set_objective(variable, maximize)
 
-    def configure_solver(self) -> None:
-        # TODO allow to configurate solver
+    def configure_solver(self, search_strategy: str = "default") -> None:
         self.solver = self.model.get_solver()
+
+        if search_strategy not in available_search_strategies:
+            raise ValueError(f"search strategy {search_strategy} unknown")
+
+        func = available_search_strategies[search_strategy]
+        func(self.solver, *self.assignment_vars)
 
     def solve(self) -> Solution:
         has_solution = self.solver.solve()
