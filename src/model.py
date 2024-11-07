@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Callable, Generator
 
-    from pychoco.variables.intvar import IntVar
+    from pychoco.variables import IntVar
 
     from .beds_data import BedsData
     from .constraints import Constraint
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 import numpy as np
 from pychoco import Model
 from pychoco.solver import Solver as ChocoSolver
+from pychoco.variables import BoolVar
 
 from .solution import Solution
 
@@ -72,7 +73,12 @@ class AgroEcoPlanModel:
     def add_constraint(self, constraint: Constraint) -> None:
         constraints = constraint.build(self.model, self.assignment_vars)
         for cstr in constraints:
-            cstr.post()
+            if hasattr(cstr, "post") and callable(cstr.post):
+                cstr.post()
+            elif isinstance(cstr, BoolVar):
+                self.model.add_clause_true(cstr)
+            else:
+                raise ValueError(f"unknown constraint type {type(cstr)}")
 
     def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
         self.model.set_objective(variable, maximize)

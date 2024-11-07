@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
 
+    import networkx as nx
+
 import pandas as pd
 
 
@@ -23,3 +25,7 @@ class CropsData:
 
     def __len__(self) -> int:
         return self.n_crops
+
+    def get_interactions_graph(self) -> nx.Graph:
+        import networkx as nx
+        return nx.from_pandas_adjacency(self.df_interactions)

@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
     from pychoco.variables.intvar import IntVar
 
-    from crops_calendar import CropsCalendar
+    from .crops_calendar import CropsCalendar
 
 import pandas as pd
 

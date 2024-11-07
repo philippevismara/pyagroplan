@@ -73,7 +73,7 @@ class CropsRotationConstraint(Constraint):
         for i in self.interval_graph:
             for j in self.interval_graph.neighbors(i):
                 constraints.append(
-                    model.arithm(assignment_vars[i], "!=", assignment_vars[j])
+                    assignment_vars[i] != assignment_vars[j]
                 )
 
         return constraints
@@ -157,7 +157,7 @@ class ForbidNegativeInteractionsConstraint(Constraint):
                     and self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0
                 ):
                     constraints.append(
-                        model.distance(a_i, a_j, ">", 1)
+                        abs(a_i - a_j) > 1
                     )
 
         return constraints
