@@ -1,6 +1,6 @@
 import argparse
 
-from src import constraints as cstrs
+from src.constraints import constraints as cstrs
 from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
 from src.model import AgroEcoPlanModel, available_search_strategies
 
@@ -63,11 +63,10 @@ if __name__ == "__main__":
         cstrs.ForbidNegativeInteractionsConstraint(
             crops_calendar,
             beds_data,
-            implementation="distance",
         ),
     ]
-    """
     # TODO add objective function
+    """
 
     # Scenario 2
     constraints = [
@@ -79,7 +78,7 @@ if __name__ == "__main__":
     """
     from src.data_loaders.utils import convert_string_to_int_list
     constraints = [
-        cstrs.UnitaryCropsBedsConstraint(
+        cstrs.LocationConstraint(
             crops_calendar,
             beds_data,
             beds_selection_func=lambda crop_data, _: convert_string_to_int_list(crop_data["forbidden_beds"]),

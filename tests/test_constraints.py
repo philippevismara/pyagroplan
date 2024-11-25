@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from src import constraints as cstrs
+from src.constraints import constraints as cstrs
 from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
 from src.model import AgroEcoPlanModel
 
@@ -30,18 +30,10 @@ def crops_calendar(crops_data):
     return CSVCropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv", crops_data)
 
 
-def test_abstract_constraint():
-    with pytest.raises(TypeError):
-        cstrs.Constraint()
-
-
-@pytest.mark.parametrize("implementation", ["table", "distance"])
-def test_forbid_negative_interactions_constraint(crops_calendar, beds_data, implementation):
+def test_forbid_negative_interactions_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    constraint = cstrs.ForbidNegativeInteractionsConstraint(
-        crops_calendar, beds_data, implementation
-    )
+    constraint = cstrs.ForbidNegativeInteractionsConstraint(crops_calendar, beds_data)
     model.init([constraint])
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
@@ -57,9 +49,7 @@ def test_forbid_negative_interactions_constraint(crops_calendar, beds_data, impl
 def test_dilute_species_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    constraint = cstrs.DiluteSpeciesConstraint(
-        crops_calendar, beds_data
-    )
+    constraint = cstrs.DiluteSpeciesConstraint(crops_calendar, beds_data)
     model.init([constraint])
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
@@ -79,9 +69,7 @@ def test_dilute_species_constraint(crops_calendar, beds_data):
 def test_dilute_family_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    constraint = cstrs.DiluteFamilyConstraint(
-        crops_calendar, beds_data
-    )
+    constraint = cstrs.DiluteFamilyConstraint(crops_calendar, beds_data)
     model.init([constraint])
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
@@ -140,7 +128,7 @@ def test_group_identical_crops_together_constraint(crops_calendar, beds_data):
         assert beds_data.adjacency_function(crops_planning[3], crops_planning[4])
 
 
-def test_unitary_crops_beds_constraint(crops_calendar, beds_data):
+def test_crops_location_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
     def beds_selection_func(crop_data, beds_data):
@@ -165,7 +153,7 @@ def test_unitary_crops_beds_constraint(crops_calendar, beds_data):
             case _:
                 return []
 
-    constraint = cstrs.UnitaryCropsBedsConstraint(
+    constraint = cstrs.LocationConstraint(
         crops_calendar,
         beds_data,
         beds_selection_func,

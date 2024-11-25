@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Optional
+    from collections.abc import Sequence
 
     from .crops_data import CropsData
 
@@ -52,3 +53,13 @@ class CropsCalendar:
             len(self.df_crops_calendar),
             self.n_assignments,
         )
+
+    def is_overlapping_cultures(self, crops_ids: Sequence[int]) -> bool:
+        assert len(crops_ids) >= 2
+        return any(frozenset(crops_ids) <= interval for interval in self.crops_overlapping_cultivation_intervals)
+
+    """
+    # TODO
+    def overlapping_cultures_iter(self, subset_size=None) -> bool:
+        raise NotImplementedError()
+    """

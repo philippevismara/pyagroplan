@@ -1,9 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import networkx as nx
-
+import networkx as nx
 import numpy as np
 import pandas as pd
 
@@ -27,8 +24,6 @@ class BedsData:
         return self.n_beds
 
     def get_adjacency_graph(self) -> nx.Graph:
-        import networkx as nx
-
         edges_list = sum([
             [(i, j) for j in j_list]
             for i, j_list in self.adjacency_matrix.items()
