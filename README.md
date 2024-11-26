@@ -2,10 +2,12 @@
 
 ## Installation
 
-Using `conda` or `mamba` to create the environment and install the dependencies
+The software has been tested for Python versions >= 3.10.
+The dependecies can be installed using `pip`,
 ```script
- conda env create -f environment.yml
+pip install -r requirements.txt
 ```
+
 
 ## Unit tests
 
