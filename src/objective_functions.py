@@ -2,18 +2,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pychoco.variables import Variable, IntVar
+    from collections.abc import Sequence
 
-    from beds_data import BedsData
-    from crops_calendar import CropsCalendar
-    from model import Model
+    from pychoco import Model
+    from pychoco.variables.variable import Variable
+    from pychoco.variables.intvar import IntVar
+
+    from .beds_data import BedsData
+    from .crops_calendar import CropsCalendar
 
 from abc import ABC, abstractmethod
 
 
 class ObjectiveFunction(ABC):
     @abstractmethod
-    def build_objective(self, model: Model) -> Variable: ...
+    def build_objective(self, model: Model, assignment_vars: Sequence[IntVar]) -> Variable: ...
 
 
 class MaximizeNumberOfPositiveIteractionsObjective(ObjectiveFunction):
@@ -33,9 +36,19 @@ class MaximizeNumberOfPositiveIteractionsObjective(ObjectiveFunction):
     def _compute_objective_maximum(self) -> int:
         raise NotImplementedError()
 
-    def build_objective(self, model: Model) -> IntVar:
-        assignment_vars = model.assignment_vars
+    def build_objective(self, model: Model, assignment_vars: Sequence[IntVar]) -> IntVar:
+        n_assignments = len(assignment_vars)
         obj_var = model.intvar(self.lower_bound, self.upper_bound)
+        adj_var = model.intvars((n_assignments, n_assignments), lb=0, ub=1)
+
+        i = 0
+        model.element(adj_var[i], adjacency_matrix[i], j).post()
+
+        """
+        for i in range(n_assignments):
+            for j in range(n_assignments):
+                adj_var[i,j] = self.adjency(i,j)
+        """
 
         constraints = []
 

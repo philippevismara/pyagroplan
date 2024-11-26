@@ -8,14 +8,14 @@ if TYPE_CHECKING:
     from pychoco.variables import IntVar
 
     from .beds_data import BedsData
-    from .constraints import Constraint
+    from .constraints.cp_constraints_pychoco import Constraint
     from .crops_calendar import CropsCalendar
     from .solution import Solution
 
 import numpy as np
 from pychoco import Model
 from pychoco.solver import Solver as ChocoSolver
-from pychoco.variables import BoolVar
+from pychoco.variables.boolvar import BoolVar
 
 from .solution import Solution
 
@@ -33,6 +33,9 @@ def _get_available_search_strategies() -> dict[str, Callable]:
         match = re.fullmatch(r"^set_(.*)_search$", method_name)
         if match:
             search_name = match[1]
+            # TODO update pychoco to avoid doing this manually
+            if search_name == "default":
+                method_func = lambda solver, *_: method_func(solver)
             available_search_strategies[search_name] = method_func
 
     return available_search_strategies
@@ -53,7 +56,11 @@ class AgroEcoPlanModel:
         TODO add fixed domains (pre-allocated beds) + forbidden beds
         can't we add constraints instead? (less efficient?)
         """
-        self.assignment_vars = self.model.intvars(self.n_assignments, self.beds_data.beds_ids, name="a")
+        # TODO update pychoco to avoid doing this here
+        self.assignment_vars = [
+            self.model.intvar(self.beds_data.beds_ids, None, "{}_{}".format("a", i))
+            for i in range(self.n_assignments)
+        ]
         self.assignment_vars = np.asarray(self.assignment_vars)
 
     def __str__(self) -> str:

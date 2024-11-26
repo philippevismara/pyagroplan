@@ -6,8 +6,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     import pandas as pd
-    from pychoco.constraints import Constraint as ChocoConstraint
-    from pychoco.variables import IntVar
+    from pychoco.constraints.constraint import Constraint as ChocoConstraint
+    from pychoco.variables.intvar import IntVar
 
     from ..beds_data import BedsData
     from ..crops_calendar import CropsCalendar
@@ -70,7 +70,7 @@ class SuccessionConstraint(Constraint):
         constraints = []
 
         for i in self.temporal_adjacency_graph:
-            for j in self.temporal_adjacency_graph.neighbors(i):
+            for j in self.temporal_adjacency_graph[i]:
                 if self.forbidden:
                     constraints.append(
                         assignment_vars[i] != assignment_vars[j]
@@ -110,7 +110,7 @@ class BinaryNeighbourhoodConstraint(Constraint):
                 ):
                     tuples = []
                     for val1 in a_i.get_domain_values():
-                        for val2 in self.adjacency_graph.neighbors(val1): # more general adjacency criteria? (node distance higher than 1? sharing the same connected component?)
+                        for val2 in self.adjacency_graph[val1]: # more general adjacency criteria? (node distance higher than 1? sharing the same connected component?)
                             tuples.append((val1, val2))
 
                     constraints.append(
