@@ -44,6 +44,35 @@ available_search_strategies = _get_available_search_strategies()
 
 
 class AgroEcoPlanModel:
+    """Global class used to configure and solve the model.
+
+    Attributes
+    ----------
+    crops_calendar : CropsCalendar
+        `CropsCalendar` used.
+    beds_data : BedsData
+        `BedsData` used.
+    n_assignments : int
+        Number of assignments to make.
+    n_beds : int
+        Number of beds.
+    verbose : bool
+        Verbose output.
+    model : Model
+        Pychoco `Model` object used.
+    assignment_vars : list[IntVar]
+        List of Pychoco assignment variables.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+        `CropsCalendar` object used to define the model.
+    beds_data : BedsData
+        `BedsData` object used to define the model.
+    verbose : bool, optional
+        If True, verbose output.
+    """
+
     def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData, verbose: bool=False):
         self.crops_calendar = crops_calendar
         self.beds_data = beds_data
@@ -55,6 +84,8 @@ class AgroEcoPlanModel:
         """
         TODO add fixed domains (pre-allocated beds) + forbidden beds
         can't we add constraints instead? (less efficient?)
+
+        :meta private:
         """
         # TODO update pychoco to avoid doing this here
         self.assignment_vars = [
@@ -71,6 +102,13 @@ class AgroEcoPlanModel:
         )
 
     def init(self, constraints: Sequence[Constraint]=tuple()) -> None:
+        """Initialises the model with non-overlapping assignments constraints, symmetry breaking constraints and the constraints provided as parameter.
+
+        Parameters
+        ----------
+        constraints :
+            List of constraints to initialise the model with.
+        """
         self._add_non_overlapping_assigments_constraints()
         self._break_symmetries()
 
@@ -78,6 +116,18 @@ class AgroEcoPlanModel:
             self.add_constraint(constraint)
 
     def add_constraint(self, constraint: Constraint) -> None:
+        """Adds a constraint to the model.
+
+        Parameters
+        ----------
+        constraint :
+            Constraints to add in the model.
+
+        Raises
+        ------
+        ValueError
+            If `constraint` is not a valid constraint that can be posted.
+        """
         constraints = constraint.build(self.model, self.assignment_vars)
         for cstr in constraints:
             if hasattr(cstr, "post") and callable(cstr.post):
@@ -88,9 +138,22 @@ class AgroEcoPlanModel:
                 raise ValueError(f"unknown constraint type {type(cstr)}")
 
     def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
+        raise NotImplementedError()
         self.model.set_objective(variable, maximize)
 
     def configure_solver(self, search_strategy: str = "default") -> None:
+        """Configures the solver and the search strategy to use.
+
+        Parameters
+        ----------
+        search_strategy :
+            Search strategy to use.
+
+        Raises
+        ------
+        ValueError
+            If `search_strategy` is not a valid search strategy implemented in Pychoco.
+        """
         self.solver = self.model.get_solver()
 
         if search_strategy not in available_search_strategies:
@@ -100,6 +163,17 @@ class AgroEcoPlanModel:
         func(self.solver, *self.assignment_vars)
 
     def solve(self) -> Solution:
+        """Attempts to solve the model.
+
+        Raises
+        ------
+        RuntimeError
+            If no solution can be found.
+
+        Returns
+        -------
+        Solution
+        """
         has_solution = self.solver.solve()
         if not has_solution:
             raise RuntimeError("No solution found")
@@ -107,6 +181,12 @@ class AgroEcoPlanModel:
             return Solution(self.crops_calendar, self.assignment_vars)
 
     def iterate_over_all_solutions(self) -> Generator[Solution]:
+        """Iterator over all solutions.
+
+        Yields
+        -------
+        Solution
+        """
         while True:
             try:
                 yield self.solve()
