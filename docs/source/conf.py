@@ -54,3 +54,4 @@ napoleon_numpy_docstring = True
 napoleon_preprocess_types = True
 napoleon_include_init_with_doc = True
 napoleon_use_ivar = True
+napoleon_use_rtype = True

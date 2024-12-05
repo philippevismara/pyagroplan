@@ -21,6 +21,14 @@ from .solution import Solution
 
 
 def _get_available_search_strategies() -> dict[str, Callable]:
+    """Fetches all the search strategies defined in the Pychoco backend.
+
+    Returns
+    ------
+    dict[str, Callable]
+        Dictonary whose keys are the names of the search strategies and the values the fonction
+        defining the strategy in the backend.
+    """
     methods = [
         (method_name, getattr(ChocoSolver, method_name))
         for method_name in dir(ChocoSolver)
@@ -109,7 +117,7 @@ class AgroEcoPlanModel:
         constraints :
             List of constraints to initialise the model with.
         """
-        self._add_non_overlapping_assigments_constraints()
+        self._add_non_overlapping_assignments_constraints()
         self._break_symmetries()
 
         for constraint in constraints:
@@ -193,7 +201,10 @@ class AgroEcoPlanModel:
             except RuntimeError:
                 break
 
-    def _add_non_overlapping_assigments_constraints(self) -> None:
+    def _add_non_overlapping_assignments_constraints(self) -> None:
+        """Adds non-overlapping assignments constraints as part of the basic model definition.
+        """
+
         """
         TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
             and separators should be sufficient, but we should prove it to be sure.
@@ -203,6 +214,12 @@ class AgroEcoPlanModel:
             self.model.all_different(overlapping_assignment_vars).post()
 
     def _break_symmetries(self) -> None:
+        """Adds symmetry-breaking constraints as part of the basic model definition.
+
+        The symmetry-breaking constraints consist of `increasing` constraints on
+        assignment variables part of the same cropping group.
+        """
+
         for group in self.crops_calendar.crops_groups_assignments:
             # TODO remove len(group) == 1
             assert len(group) > 0
