@@ -15,3 +15,19 @@ To run unit tests, from the root directory, execute:
 ```script
 python -m pytest tests
 ```
+
+
+## Documentation
+
+To build the documentation, first make sure to have the dependencies installed:
+```script
+pip install -r docs/docs_requirements.txt
+```
+
+Then, execute:
+```script
+cd docs
+make html
+```
+
+The documentation is then available at `docs/build/html/index.html`.

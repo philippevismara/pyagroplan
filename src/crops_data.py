@@ -10,6 +10,26 @@ import pandas as pd
 
 
 class CropsData:
+    """Handles crops data.
+
+    Attributes
+    ----------
+    df_metadata : pd.DataFrame
+        DataFrame containing the raw metadata of crops.
+    df_interactions : pd.DataFrame
+        DataFrame containing the raw interactions matrix.
+    n_crops : int
+        Number of different types of crops defined.
+    crops_interactions : Callable[[str, str], Any]
+        Function returning the interaction between two crops.
+
+    Parameters
+    ----------
+    df_crops_metadata : pd.DataFrame
+        DataFrame containing the raw metadata of crops.
+    df_crops_interactions : pd.DataFrame
+        DataFrame containing the raw interactions matrix.
+    """
     def __init__(self, df_crops_metadata: pd.DataFrame, df_crops_interactions: pd.DataFrame):
         self.df_metadata = df_crops_metadata.copy()
         self.df_interactions = df_crops_interactions.copy()
@@ -27,5 +47,11 @@ class CropsData:
         return self.n_crops
 
     def get_interactions_graph(self) -> nx.Graph:
+        """Builds the interactions graph between crops.
+
+        Returns
+        -------
+        nx.Graph
+        """
         import networkx as nx
         return nx.from_pandas_adjacency(self.df_interactions)

@@ -15,6 +15,32 @@ from .interval_graph import interval_graph
 
 
 class CropsCalendar:
+    """Handles crops data.
+
+    Attributes
+    ----------
+    df_crops_calendar : pd.DataFrame
+        DataFrame containing the raw crops calendar.
+    crops_data : CropsData or None
+        Crops metadata.
+    crops_groups : np.array
+    crops_groups_assignments : list[np.array]
+    crops_calendar : np.array
+    crops_names : np.array
+    df_assignments : pd.DataFrame
+        DataFrame containing the raw crops calendar with a single line per bed to allocate.
+    n_assignments : int
+        Total number of assignments to make.
+    crops_overlapping_cultivation_intervals : frozenset[frozenset]
+        Set of sets of groups of crops being cultivated at the same time.
+
+    Parameters
+    ----------
+    df_crops_calendar : pd.DataFrame
+        DataFrame containing the raw crops calendar.
+    crops_data : CropsData, optional
+        Crops metadata object.
+    """
     def __init__(self, df_crops_calendar: pd.DataFrame, crops_data: Optional[CropsData]=None):
         self.df_crops_calendar = df_crops_calendar.copy()
         self.crops_data = crops_data
@@ -55,6 +81,17 @@ class CropsCalendar:
         )
 
     def is_overlapping_cultures(self, crops_ids: Sequence[int]) -> bool:
+        """Checks if crops are all being cultivated at the same time.
+
+        Parameters
+        ----------
+        crops_ids : Sequence[int]
+
+        Returns
+        -------
+        bool
+            True if all crops are being cultivated at the same time (i.e., the intersection of their cultivation intervals is not the empty set).
+        """
         assert len(crops_ids) >= 2
         return any(frozenset(crops_ids) <= interval for interval in self.crops_overlapping_cultivation_intervals)
 

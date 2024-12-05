@@ -6,9 +6,18 @@
 pyagroplan documentation
 ========================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
+Modules
+-------
+   
 .. automodule:: src.model
+   :members:
+
+.. automodule:: src.beds_data
+   :members:
+
+.. automodule:: src.crops_data
+   :members:
+
+.. automodule:: src.crops_calendar
    :members:
