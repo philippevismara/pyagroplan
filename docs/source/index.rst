@@ -7,12 +7,9 @@ pyagroplan documentation
 ========================
 
 
-Modules
--------
+Data
+----
    
-.. automodule:: src.model
-   :members:
-
 .. automodule:: src.beds_data
    :members:
 
@@ -20,4 +17,40 @@ Modules
    :members:
 
 .. automodule:: src.crops_calendar
+   :members:
+
+.. automodule:: src.data_loaders
+   :members:
+
+Model
+-----
+      
+.. automodule:: src.model
+   :members:
+
+.. automodule:: src.solution
+   :members:
+
+
+Constraints
+-----------
+
+High-level constraints
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: src.constraints.constraints
+   :members:
+
+      
+Mid-level constraints
+^^^^^^^^^^^^^^^^^^^^^
+      
+.. automodule:: src.constraints.cp_constraints_pychoco
+   :members:
+
+
+Utils
+-----
+
+.. automodule:: src.utils.interval_graph
    :members:

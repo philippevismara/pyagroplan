@@ -13,6 +13,24 @@ import pandas as pd
 
 
 class Solution:
+    """One assignment solution of the model.
+
+    Attributes
+    ----------
+    crops_calendar : CropsCalendar
+        Crops calendar used in the model.
+    variables : Sequence[IntVar]
+        Variables of the model.
+    crops_planning : pd.DataFrame
+        Solution as a `DataFrame` with two columns with the crop name and
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+        Crops calendar used in the model.
+    variables : Sequence[IntVar]
+        Variables of the model.
+    """
     def __init__(self, crops_calendar: CropsCalendar, variables: Sequence[IntVar]):
         self.crops_calendar = crops_calendar
         self.variables = variables
@@ -33,6 +51,15 @@ class Solution:
         return "Solution:\n{}".format(self.crops_planning)
 
     def to_csv(self, filename: str, **kwargs: Any) -> None:
+        """Saves the solution as a CSV file.
+
+        Parameters
+        ----------
+        filename : str
+            CSV filename to use.
+        kwargs
+            arguments to pass to panda's CSV writer
+        """
         kwargs = {
             "index": False,
             "sep": ";",

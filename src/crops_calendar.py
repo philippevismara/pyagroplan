@@ -11,7 +11,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .interval_graph import interval_graph
+from .utils.interval_graph import interval_graph
 
 
 class CropsCalendar:

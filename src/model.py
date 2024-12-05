@@ -21,7 +21,7 @@ from .solution import Solution
 
 
 def _get_available_search_strategies() -> dict[str, Callable]:
-    """Fetches all the search strategies defined in the Pychoco backend.
+    """Fetches all the search strategies implemented in Pychoco.
 
     Returns
     ------
@@ -48,6 +48,7 @@ def _get_available_search_strategies() -> dict[str, Callable]:
 
     return available_search_strategies
 
+#: Dictionnary of search strategies implemented in Pychoco
 available_search_strategies = _get_available_search_strategies()
 
 

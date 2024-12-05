@@ -19,11 +19,43 @@ import networkx as nx
 
 
 class Constraint(ABC):
+    """Abstract class from which all mid-level constraints are derived.
+
+    Child classes must implement the `build` method.
+    """
     @abstractmethod
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence: ...
+    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence:
+        """Abstract method building the constraint.
+
+        Parameters
+        ----------
+        model : Model
+            Model to apply the constraint to.
+        assignment_vars : Sequence[IntVar]
+            Sequence containing the assignment variables.
+
+        Returns
+        -------
+        Sequence
+            Either a sequence of Pychoco constraints or of BoolVar.
+        """
+        ...
 
 
 class LocationConstraint(Constraint):
+    """Implements unitary constraints based on crops and beds compatibility.
+
+    Uses `member` and `not_member` constraints.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    beds_data : BedsData
+    beds_selection_func : Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]]
+        Filtering function taking a single crop data and generating the list of beds the contraint applies on.
+    forbidden : bool
+        If True, implements a negative constraint.
+    """
     def __init__(
             self,
             crops_calendar: CropsCalendar,
@@ -56,6 +88,16 @@ class LocationConstraint(Constraint):
 
 
 class SuccessionConstraint(Constraint):
+    """Implements temporal proximity constraints.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    temporal_adjacency_graph : nx.Graph
+        Graph representing the temporal proximity.
+    forbidden : bool
+        If True, implements a negative constraint.
+    """
     def __init__(
             self,
             crops_calendar: CropsCalendar,
@@ -83,8 +125,18 @@ class SuccessionConstraint(Constraint):
         return constraints
 
 
-# Switch from binary to nary constraint
+# TODO Switch from binary to nary constraint
 class BinaryNeighbourhoodConstraint(Constraint):
+    """Implements spatial proximity constraints for pairs of crops.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    adjacency_graph : nx.Graph
+        Graph representing the spatial proximity.
+    forbidden : bool
+        If True, implements a negative constraint.
+    """
     def __init__(
             self,
             crops_calendar: CropsCalendar,
@@ -121,6 +173,16 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
 
 class GroupNeighbourhoodConstraint(Constraint):
+    """Implements spatial proximity constraints for groups of crops.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    adjacency_graph : nx.Graph
+        Graph representing the spatial proximity.
+    forbidden : bool
+        If True, implements a negative constraint.
+    """
     def __init__(
             self,
             crops_groups: Sequence[Sequence[int]],
