@@ -1,5 +1,7 @@
 # Pyagroplan
 
+[![python-package](https://github.com/philippevismara/pyagroplan/actions/workflows/python-package.yml/badge.svg)](https://github.com/philippevismara/pyagroplan/actions)
+
 ## Installation
 
 The software has been tested for Python versions >= 3.10.
