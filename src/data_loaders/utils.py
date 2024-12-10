@@ -9,6 +9,18 @@ import warnings
 
 
 def convert_string_to_int_list(s: str) -> tuple[int,...]:
+    """Converts a string containing a list of ints to a proper tuple of ints.
+
+    Parameters
+    ----------
+    s : str
+        String to convert.
+
+    Returns
+    -------
+    tuple of int
+        Tuple containing the ints from the input string.
+    """
     if isinstance(s, float):
         s = str(s)
         if s == "nan":
@@ -22,7 +34,21 @@ def convert_string_to_int_list(s: str) -> tuple[int,...]:
         return tuple(map(int, str_list))
 
 
-def read_csv_metadata(filename: str, comment: str="#") -> dict:
+def read_csv_metadata(filename: str, comment: str="#") -> dict[str, str]:
+    """Reads the metadata header from a CSV file.
+
+    Parameters
+    ----------
+    filename : str
+        CSV file to process.
+    comment : str, default="#"
+        Prefix of the lines containing the metadata.
+
+    Returns
+    -------
+    dict[str, str]
+        Dictionnary mapping the metadata keys to their values.
+    """
     metadata = {}
 
     with open(filename) as fp:
@@ -43,6 +69,32 @@ def read_csv_metadata(filename: str, comment: str="#") -> dict:
 
 
 def dispatch_to_appropriate_loader(filename: str|Sequence[str], scope: object) -> Any:
+    """Find the appropriate loader for the given CSV file.
+
+    Reads the file format version in the metadata (from the `format_version` key).
+    If the loading fails or no file format version is found, attempts loading with all available loaders.
+
+    Parameters
+    ----------
+    filename : str
+        CSV file to load.
+    scope : object
+        Object / scope in which to search the loader.
+
+    Returns
+    -------
+    data : Any
+
+    Warns
+    -----
+    RuntimeWarning
+        If a file format is specified but no explicitly compatible loader can be found.
+
+    Raises
+    ------
+    RuntimeError
+        If no adapted loader can be found.
+    """
     try:
         csv_metadata = read_csv_metadata(filename)
     except Exception:
@@ -59,7 +111,8 @@ def dispatch_to_appropriate_loader(filename: str|Sequence[str], scope: object) -
             loaded = True
         else:
             warnings.warn(
-                "Specific function for data loading not found, tries using available loaders"
+                "Specific function for data loading not found, tries using available loaders",
+                RuntimeWarning,
             )
 
     # Attemps to load using all available loaders
@@ -76,6 +129,6 @@ def dispatch_to_appropriate_loader(filename: str|Sequence[str], scope: object) -
                 pass
 
         if not loaded:
-            raise NotImplementedError()
+            raise RuntimeError()
 
     return data

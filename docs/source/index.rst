@@ -22,6 +22,10 @@ Data
 .. automodule:: src.data_loaders
    :members:
 
+.. automodule:: src.data_loaders.utils
+   :members:
+
+
 Model
 -----
       
