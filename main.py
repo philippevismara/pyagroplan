@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "beds_data_path",
         type=str,
-        help="path to beds data CSV file"
+        help="path to beds data CSV file",
     )
     parser.add_argument(
         "crops_calendar_path",
