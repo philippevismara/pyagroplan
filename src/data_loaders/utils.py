@@ -34,27 +34,29 @@ def convert_string_to_int_list(s: str) -> tuple[int,...]:
         return tuple(map(int, str_list))
 
 
-def read_csv_metadata(filename: str, comment: str="#") -> dict[str, str]:
+def read_csv_metadata(filename: str, prefix_char: str="#") -> dict[str, str]:
     """Reads the metadata header from a CSV file.
 
     Parameters
     ----------
     filename : str
         CSV file to process.
-    comment : str, default="#"
-        Prefix of the lines containing the metadata.
+    prefix_char : str (length 1), default="#"
+        Prefix character indicating the lines containing the metadata.
 
     Returns
     -------
     dict[str, str]
         Dictionnary mapping the metadata keys to their values.
     """
+    assert len(prefix_char) == 1
+
     metadata = {}
 
     with open(filename) as fp:
         for row in fp:
             row = row.strip()
-            if row[0] != comment:
+            if row[0] != prefix_char:
                 break
 
             row = row[1:].strip()
@@ -66,6 +68,27 @@ def read_csv_metadata(filename: str, comment: str="#") -> dict[str, str]:
                 metadata[key.strip()] = value.strip()
 
     return metadata
+
+
+def write_csv_metadata(filename: str, metadata: dict[str, str], prefix_char: str="#") -> None:
+    """Write the metadata header to a CSV file.
+
+    Parameters
+    ----------
+    filename : str
+        CSV file to process.
+    metadata : dict[str, str]
+        Dictionnary mapping the metadata keys to their values.
+    prefix_char : str (length 1), default="#"
+        Prefix character indicating the lines containing the metadata.
+    """
+    assert len(prefix_char) == 1
+
+    with open(filename, "w") as fp:
+        for key, value in metadata.items():
+            fp.write(
+                f"{prefix_char} {key}: {value}\n"
+            )
 
 
 def dispatch_to_appropriate_loader(filename: str|Sequence[str], scope: object) -> Any:
