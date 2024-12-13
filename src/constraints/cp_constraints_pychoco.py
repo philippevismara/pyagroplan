@@ -90,6 +90,10 @@ class LocationConstraint(Constraint):
 class SuccessionConstraint(Constraint):
     """Implements temporal proximity constraints.
 
+    Two implementations are available:
+    - "pairwise": all constraints are binary equality or non-equality constraints
+    - "cliques": uses all_different or all_equal constraints on maximal cliques
+
     Parameters
     ----------
     crops_calendar : CropsCalendar
@@ -97,18 +101,35 @@ class SuccessionConstraint(Constraint):
         Graph representing the temporal proximity.
     forbidden : bool
         If True, implements a negative constraint.
+    implementation : str, default="pairwise"
+        If "pairwise" produces binary constraints on graph's edges, if "cliques" produces global constraints on cliques.
     """
     def __init__(
             self,
             crops_calendar: CropsCalendar,
             temporal_adjacency_graph: nx.Graph,
             forbidden: bool,
+            implementation: str="pairwise",
     ):
         self.crops_calendar = crops_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
         self.forbidden = forbidden
+        self.implementation = implementation
+
+        build_funcs = {
+            "pairwise": self._build_pairwise,
+            "cliques": self._build_cliques,
+        }
+        if implementation not in build_funcs.keys():
+            raise ValueError(
+                f"'implementation' must take one of the following values: {list(build_funcs.keys())}"
+            )
+        self._build_func = build_funcs[implementation]
 
     def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+        return self._build_func(model, assignment_vars)
+
+    def _build_pairwise(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
         constraints = []
 
         for i in self.temporal_adjacency_graph:
@@ -124,8 +145,20 @@ class SuccessionConstraint(Constraint):
 
         return constraints
 
+    def _build_cliques(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+        constraints = []
 
-# TODO Switch from binary to nary constraint
+        cliques = nx.chordal_graph_cliques(self.temporal_adjacency_graph)
+        for clique in cliques:
+            overlapping_assignment_vars = assignment_vars[list(clique)]
+            if self.forbidden:
+                model.all_different(overlapping_assignment_vars).post()
+            else:
+                model.all_equal(overlapping_assignment_vars).post()
+
+        return constraints
+
+
 class BinaryNeighbourhoodConstraint(Constraint):
     """Implements spatial proximity constraints for pairs of crops.
 
