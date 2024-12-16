@@ -205,11 +205,6 @@ class AgroEcoPlanModel:
     def _add_non_overlapping_assignments_constraints(self) -> None:
         """Adds non-overlapping assignments constraints as part of the basic model definition.
         """
-
-        """
-        TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
-            and separators should be sufficient, but we should prove it to be sure.
-        """
         for overlapping_crops in self.crops_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
             self.model.all_different(overlapping_assignment_vars).post()

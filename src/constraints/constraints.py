@@ -16,6 +16,10 @@ class CropsRotationConstraint(SuccessionConstraint):
     crops_calendar : CropsCalendar
     """
     def __init__(self, crops_calendar: CropsCalendar):
+        """
+        TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
+            and separators should be sufficient, but we should prove it to be sure.
+        """
         self.return_delay = crops_calendar.df_assignments["return_delay"].values
         self.families = crops_calendar.df_assignments["crop_family"].values
 
@@ -25,6 +29,39 @@ class CropsRotationConstraint(SuccessionConstraint):
         temporal_adjacency_graph = interval_graph(
             list(map(list, intervals)),
             filter_func=lambda i,j: self.families[i] == self.families[j],
+        )
+
+        super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)
+
+
+class CategoryCropsRotationConstraint(SuccessionConstraint):
+    """Enforces crops rotation based on a return delay matrix between species.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    return_delays : pd.DataFrame
+    """
+    def __init__(self, crops_calendar: CropsCalendar, return_delays: pd.DataFrame):
+        self.return_delays = return_delays
+
+        import networkx as nx
+        category_return_delays_graph = nx.from_pandas_adjacency(return_delays, nx.DiGraph)
+
+        intervals = crops_calendar.crops_calendar[:, 1:3]
+
+        start = intervals[:,0]
+        category = crops_calendar.df_assignments["category"].values
+        def filter_func(i: int, j: int) -> bool:
+            return (
+                (category[i], category[j]) in category_return_delays_graph.edges
+                and (start[i] + category_return_delays_graph.edges[category[i], category[j]]["weight"] >= start[j])
+            )
+
+        from ..utils.interval_graph import interval_graph
+        temporal_adjacency_graph = interval_graph(
+            list(map(list, intervals)),
+            filter_func=filter_func,
         )
 
         super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)

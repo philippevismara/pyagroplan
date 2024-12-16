@@ -1,6 +1,12 @@
 """
 Generators for interval graph.
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Callable, Optional
+
 from collections.abc import Sequence
 
 import networkx as nx
@@ -9,7 +15,7 @@ __all__ = ["interval_graph"]
 
 
 #@nx._dispatchable(graphs=None, returns_graph=True)
-def interval_graph(intervals, filter_func=None):
+def interval_graph(intervals: Sequence, filter_func: Optional[Callable]=None) -> nx.Graph:
     """Generates an interval graph for a list of intervals given.
 
     In graph theory, an interval graph is an undirected graph formed from a set
@@ -58,14 +64,15 @@ def interval_graph(intervals, filter_func=None):
     graph = nx.Graph()
 
     nodes = [(i, {"interval": tuple(interval)}) for i, interval in enumerate(intervals)]
+    nodes = sorted(nodes, key=lambda k: k[1]["interval"][0])
     graph.add_nodes_from(nodes)
 
-    for i in list(graph):
-        min1, max1 = graph.nodes[i]["interval"]
-        for j in list(graph)[i+1:]:
-            min2, max2 = graph.nodes[j]["interval"]
-            if filter_func is None or filter_func(i, j):
-                if max1 >= min2 and max2 >= min1:
-                    graph.add_edge(i, j)
+    import itertools
+    for i, j in itertools.combinations(graph, 2):
+        start1, end1 = graph.nodes[i]["interval"]
+        start2, end2 = graph.nodes[j]["interval"]
+        if filter_func is None or filter_func(i, j):
+            if end1 >= start2:
+                graph.add_edge(i, j)
 
     return graph
