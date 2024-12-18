@@ -171,7 +171,7 @@ class CSVCropsDataLoader(CSVDataLoader):
         df_interactions = pd.read_csv(
             interactions_filename,
             sep=";",
-            index_col="crop_name",
+            index_col=0,
             comment="#",
         )
 

@@ -96,6 +96,78 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
         return self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0  # type: ignore[no-any-return]
 
 
+class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
+    """Forbids negative interactions between crops using defined subintervals.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    beds_data : BedsData
+    """
+    def __init__(
+            self,
+            crops_calendar: CropsCalendar,
+            beds_data: BedsData,
+    ):
+        adjacency_graph = beds_data.get_adjacency_graph()
+        super().__init__(crops_calendar, adjacency_graph, forbidden=True)
+
+        if not crops_calendar.crops_data:
+            raise ValueError("No crops interaction data can be found")
+        self.crops_interactions = crops_calendar.crops_data.crops_interactions
+        self.crops_category = crops_calendar.df_assignments["category"].array
+
+        import re
+
+        int_pattern = r"[+-]?[0-9]+"
+        self.regex_prog = re.compile(r"([\+-])\[(" + int_pattern + "),(" + int_pattern + ")\]\[(" + int_pattern + "),(" + int_pattern + ")\]")
+
+    def crops_selection_function(self, i: int, j: int) -> bool:
+        """Selects only pairs of crops with negative interactions.
+
+        :meta private:
+        """
+        interaction_str = self.crops_interactions(self.crops_category[i], self.crops_category[j])
+
+        import numpy as np
+        if (
+                (isinstance(interaction_str, (float, np.floating)) and np.isnan(interaction_str))
+                or (len(interaction_str) == 0)
+        ):
+            return False
+
+        match = self.regex_prog.search(interaction_str)
+        if not match:
+            raise ValueError("Can not extract intervals from string: {}".format(interaction_str))
+
+        sign, s1, e1, s2, e2 = match.groups()
+        s1, e1, s2, e2 = int(s1), int(e1), int(s2), int(e2)
+
+        if sign == "+":
+            return False
+
+        interval1, interval2 = self.crops_calendar.df_assignments.iloc[[i, j]].loc[:, ["starting_week", "ending_week"]].values
+        interval1_final, interval2_final = interval1.copy(), interval2.copy()
+        if s1 >= 0:
+            interval1_final[0] = interval1[0] + max(0, s1-1)
+        else:
+            interval1_final[0] = interval1[1] + min(0, s1+1)
+        if e1 >= 0:
+            interval1_final[1] = interval1[0] + max(0, e1-1)
+        else:
+            interval1_final[1] = interval1[1] + min(0, e1+1)
+        if s2 >= 0:
+            interval2_final[0] = interval2[0] + max(0, s2-1)
+        else:
+            interval2_final[0] = interval2[1] + min(0, s2+1)
+        if e2 >= 0:
+            interval2_final[1] = interval2[0] + max(0, e2-1)
+        else:
+            interval2_final[1] = interval2[1] + min(0, e2+1)
+
+        return (interval1_final[0] <= interval2_final[1]) and (interval1_final[1] >= interval2_final[0])
+
+
 class DiluteSpeciesConstraint(BinaryNeighbourhoodConstraint):
     """Forbids crops from identical species to be spatially adjacent.
 
