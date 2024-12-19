@@ -40,9 +40,12 @@ class Solution:
         # TODO self.variables = choco_solution.retrieveIntVars()
 
         self.crops_planning = pd.DataFrame({
-            "crop_name": self.crops_calendar.crops_names,
+            "crop_name": self.crops_calendar.df_assignments["crop_name"],
+            "starting_week": self.crops_calendar.df_assignments["starting_week"],
+            "ending_week": self.crops_calendar.df_assignments["ending_week"],
             "assignment": self.variables_values
         })
+        self.crops_planning.sort_index(inplace=True)
 
     def __len__(self) -> int:
         return len(self.crops_planning)
