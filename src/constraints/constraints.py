@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ..beds_data import BedsData
     from ..crops_calendar import CropsCalendar
 
-from .cp_constraints_pychoco import BinaryNeighbourhoodConstraint, GroupNeighbourhoodConstraint, SuccessionConstraint, LocationConstraint
+from .cp_constraints_pychoco import BinaryNeighbourhoodConstraint, GroupNeighbourhoodConstraint, SuccessionConstraint, SuccessionConstraintWithReinitialisation, LocationConstraint
 
 
 class CropsRotationConstraint(SuccessionConstraint):
@@ -222,3 +222,27 @@ class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
         adjacency_graph = beds_data.get_adjacency_graph()
         groups = crops_calendar.crops_groups_assignments
         super().__init__(groups, adjacency_graph, forbidden=False)
+
+
+class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):
+    def __init__(self, crops_calendar: CropsCalendar, precedences: pd.DataFrame):
+        import networkx as nx
+        precedences_graph = nx.from_pandas_adjacency(precedences, nx.DiGraph)
+
+        intervals = crops_calendar.crops_calendar[:, 1:3]
+        starting_weeks = intervals[:, 0]
+        category = crops_calendar.df_assignments["category"].values
+
+        def filter_func(i: int, j: int) -> bool:
+            return (
+                (category[i], category[j]) in precedences_graph.edges
+                and (precedences_graph.edges[category[i], category[j]]["weight"] <= 0)
+                and (starting_weeks[i] - precedences_graph.edges[category[i], category[j]]["weight"] >= starting_weeks[j])
+            )
+
+        from ..utils.interval_graph import interval_graph
+        temporal_adjacency_graph = interval_graph(
+            list(map(list, intervals)),
+            filter_func=filter_func,
+        )
+        super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)

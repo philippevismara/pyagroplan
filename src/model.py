@@ -16,6 +16,7 @@ import numpy as np
 from pychoco import Model
 from pychoco.solver import Solver as ChocoSolver
 from pychoco.variables.boolvar import BoolVar
+from pychoco.constraints.cnf.log_op import LogOp
 
 from .solution import Solution
 
@@ -143,6 +144,8 @@ class AgroEcoPlanModel:
                 cstr.post()
             elif isinstance(cstr, BoolVar):
                 self.model.add_clause_true(cstr)
+            elif isinstance(cstr, LogOp):
+                self.model.add_clauses_logop(cstr)
             else:
                 raise ValueError(f"unknown constraint type {type(cstr)}")
 

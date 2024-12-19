@@ -6,7 +6,9 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     import pandas as pd
+    from pychoco.constraints.cnf.log_op import LogOp
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
+    from pychoco.variables.boolvar import BoolVar
     from pychoco.variables.intvar import IntVar
 
     from ..beds_data import BedsData
@@ -24,7 +26,7 @@ class Constraint(ABC):
     Child classes must implement the `build` method.
     """
     @abstractmethod
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence:
+    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint | BoolVar | LogOp]:
         """Abstract method building the constraint.
 
         Parameters
@@ -155,6 +157,63 @@ class SuccessionConstraint(Constraint):
                 model.all_different(overlapping_assignment_vars).post()
             else:
                 model.all_equal(overlapping_assignment_vars).post()
+
+        return constraints
+
+
+class SuccessionConstraintWithReinitialisation(Constraint):
+    """Implements temporal proximity constraints with reinitialisation.
+
+    Parameters
+    ----------
+    crops_calendar : CropsCalendar
+    temporal_adjacency_graph : nx.Graph
+        Graph representing the temporal proximity.
+    forbidden : bool
+        If True, implements a negative constraint.
+    """
+    def __init__(
+            self,
+            crops_calendar: CropsCalendar,
+            temporal_adjacency_graph: nx.Graph,
+            forbidden: bool,
+    ):
+        self.crops_calendar = crops_calendar
+        self.temporal_adjacency_graph = temporal_adjacency_graph
+        self.forbidden = forbidden
+
+        intervals = crops_calendar.crops_calendar[:, 1:3]
+        starting_weeks = intervals[:, 0]
+        assert(all(starting_weeks[i] <= starting_weeks[i+1] for i in range(len(starting_weeks) - 1)))
+        self.starting_weeks = starting_weeks
+
+    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+        constraints = []
+
+        for i in self.temporal_adjacency_graph:
+            for j in self.temporal_adjacency_graph[i]:
+                if i > j:
+                    continue
+
+                if self.forbidden:
+                    if i+1 == j:
+                        constraints.append(
+                            assignment_vars[i] != assignment_vars[j]
+                        )
+                    else:
+                        candidates_ind = range(i+1, j)
+
+                        from pychoco.constraints.cnf.log_op import implies_op, or_op
+                        constraints.append(
+                            implies_op(
+                                assignment_vars[i] == assignment_vars[j],
+                                or_op(
+                                    *(assignment_vars[k] == assignment_vars[i] for k in candidates_ind)
+                                )
+                            )
+                        )
+                else:
+                    raise NotImplementedError()
 
         return constraints
 

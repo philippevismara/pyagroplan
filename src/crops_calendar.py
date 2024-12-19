@@ -42,7 +42,7 @@ class CropsCalendar:
         Crops metadata object.
     """
     def __init__(self, df_crops_calendar: pd.DataFrame, crops_data: Optional[CropsData]=None):
-        self.df_crops_calendar = df_crops_calendar.copy()
+        self.df_crops_calendar = df_crops_calendar.copy().sort_values(by="starting_week")
         self.crops_data = crops_data
 
         if self.crops_data is not None:
