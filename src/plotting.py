@@ -132,13 +132,14 @@ def plot_solution(
         fig = plt.figure(figsize=(5, 5))
         ax = fig.gca()
 
-    colors = colors or {}
+    from collections import defaultdict
+    colors = colors if colors is not None else defaultdict()
 
     beds_adjacency_graph = beds_data.get_adjacency_graph()
     plots_data = [(list(cc)[0], len(cc)) for cc in nx.connected_components(beds_adjacency_graph)]
     plots, sizes = list(zip(*plots_data))
 
-    df_solution = pd.concat((solution.crops_calendar.df_assignments.iloc[:,:3].reset_index(), solution.crops_planning.iloc[:,-1:]), axis=1)
+    df_solution = solution.crops_planning
     first_week = df_solution["starting_week"].min()
     n_weeks = df_solution["ending_week"].max()
     n_beds = sum(sizes)
@@ -148,7 +149,7 @@ def plot_solution(
             (vals["starting_week"], vals["assignment"]),
             width=vals["ending_week"]-vals["starting_week"],
             height=1,
-            color=colors.get(vals["crop_name"], None),
+            color=colors[vals["crop_name"]],
             antialiased=False,
             linewidth=0,
         )
