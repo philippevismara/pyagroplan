@@ -33,7 +33,10 @@ def crops_calendar(crops_data):
 def test_forbid_negative_interactions_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    constraint = cstrs.ForbidNegativeInteractionsConstraint(crops_calendar, beds_data)
+    constraint = cstrs.ForbidNegativeInteractionsConstraint(
+        crops_calendar,
+        beds_data,
+    )
     model.init([constraint])
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
@@ -44,6 +47,38 @@ def test_forbid_negative_interactions_constraint(crops_calendar, beds_data):
         crops_planning = solution.crops_planning["assignment"].values
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[3])
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[4])
+        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[3])
+        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[4])
+
+
+def test_forbid_negative_interactions_subintervals_constraint(crops_calendar, beds_data):
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    import pandas as pd
+    crops_calendar.crops_data.df_interactions = pd.DataFrame(
+        [
+            ["", "+[1,-1][1,-1]", "+[1,-1][1,-1]"],
+            ["+[1,-1][1,-1]", "", "-[1,-1][-2,-1]"],
+            ["+[1,-1][1,-1]", "-[-2,-1][1,-1]", ""],
+        ],
+        index=["carotte", "tomate", "pomme_de_terre"],
+        columns=["carotte", "tomate", "pomme_de_terre"],
+    )
+
+    constraint = cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
+        crops_calendar,
+        beds_data,
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"].values
+        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[3])
+        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[4])
 
 
 def test_dilute_species_constraint(crops_calendar, beds_data):
@@ -104,6 +139,36 @@ def test_crops_rotation_constraint(crops_calendar, beds_data):
         crops_planning = solution.crops_planning["assignment"].values
 
         assert len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
+
+
+def test_category_crops_rotation_constraint(crops_calendar, beds_data):
+    import pandas as pd
+    df_return_delays = pd.DataFrame(
+        [
+            [5, 0, 0],
+            [7, 0, 0],
+            [0, 0, 0],
+        ],
+        index=["carotte", "tomate", "pomme_de_terre"],
+        columns=["carotte", "tomate", "pomme_de_terre"],
+    )
+
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    constraint = cstrs.CategoryCropsRotationConstraint(
+        crops_calendar,
+        df_return_delays,
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"].values
+
+        assert len(np.intersect1d(crops_planning[3:5], crops_planning[[6]])) == 0
 
 
 def test_group_identical_crops_together_constraint(crops_calendar, beds_data):
@@ -178,3 +243,37 @@ def test_crops_location_constraint(crops_calendar, beds_data):
         assert crops_planning[2] in [2, 4, 5]
         assert crops_planning[5] in [2, 4, 5]
         assert crops_planning[6] in [2, 4, 5]
+
+
+def test_crops_precedences_constraint(crops_calendar, beds_data):
+    import pandas as pd
+    df_precedences = pd.DataFrame(
+        [
+            [-10, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+        ],
+        index=["carotte", "tomate", "pomme_de_terre"],
+        columns=["carotte", "tomate", "pomme_de_terre"],
+    )
+
+    model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
+
+    constraint = cstrs.ForbidNegativePrecedencesConstraint(
+        crops_calendar,
+        df_precedences,
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        crops_planning = solution.crops_planning["assignment"].values
+
+        assert (
+            len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
+            or any(crops_planning[3:6] == crops_planning[6])
+            or (crops_planning[-1] == crops_planning[6])
+        )

@@ -58,8 +58,8 @@ class CategoryCropsRotationConstraint(SuccessionConstraint):
                 and (start[i] + category_return_delays_graph.edges[category[i], category[j]]["weight"] >= start[j])
             )
 
-        from ..utils.interval_graph import interval_graph
-        temporal_adjacency_graph = interval_graph(
+        from ..utils.interval_graph import build_graph
+        temporal_adjacency_graph = build_graph(
             list(map(list, intervals)),
             filter_func=filter_func,
         )
@@ -120,7 +120,7 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
         import re
 
         int_pattern = r"[+-]?[0-9]+"
-        self.regex_prog = re.compile(r"([\+-])\[(" + int_pattern + "),(" + int_pattern + ")\]\[(" + int_pattern + "),(" + int_pattern + ")\]")
+        self.regex_prog = re.compile(r"([\+-])\[(" + int_pattern + r"),(" + int_pattern + r")\]\[(" + int_pattern + r"),(" + int_pattern + r")\]")
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops with negative interactions.
@@ -240,8 +240,8 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
                 and (starting_weeks[i] - precedences_graph.edges[category[i], category[j]]["weight"] >= starting_weeks[j])
             )
 
-        from ..utils.interval_graph import interval_graph
-        temporal_adjacency_graph = interval_graph(
+        from ..utils.interval_graph import build_graph
+        temporal_adjacency_graph = build_graph(
             list(map(list, intervals)),
             filter_func=filter_func,
         )
