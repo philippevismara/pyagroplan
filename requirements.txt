@@ -2,4 +2,4 @@ matplotlib
 networkx
 numpy
 pandas
-pychoco==0.2.1
+pychoco  @ git+https://github.com/chocoteam/pychoco
