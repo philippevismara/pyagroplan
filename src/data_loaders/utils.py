@@ -1,6 +1,6 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Any
     from collections.abc import Sequence
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 import warnings
 
 
-def convert_string_to_int_list(s: str) -> tuple[int,...]:
+def convert_string_to_int_list(s: str) -> tuple[int, ...]:
     """Converts a string containing a list of ints to a proper tuple of ints.
 
     Parameters
@@ -34,7 +34,7 @@ def convert_string_to_int_list(s: str) -> tuple[int,...]:
         return tuple(map(int, str_list))
 
 
-def read_csv_metadata(filename: str, prefix_char: str="#") -> dict[str, str]:
+def read_csv_metadata(filename: str, prefix_char: str = "#") -> dict[str, str]:
     """Reads the metadata header from a CSV file.
 
     Parameters
@@ -70,7 +70,9 @@ def read_csv_metadata(filename: str, prefix_char: str="#") -> dict[str, str]:
     return metadata
 
 
-def write_csv_metadata(filename: str, metadata: dict[str, str], prefix_char: str="#") -> None:
+def write_csv_metadata(
+    filename: str, metadata: dict[str, str], prefix_char: str = "#"
+) -> None:
     """Write the metadata header to a CSV file.
 
     Parameters
@@ -91,7 +93,7 @@ def write_csv_metadata(filename: str, metadata: dict[str, str], prefix_char: str
             )
 
 
-def dispatch_to_appropriate_loader(filename: str|Sequence[str], scope: object) -> Any:
+def dispatch_to_appropriate_loader(filename: str | Sequence[str], scope: object) -> Any:
     """Find the appropriate loader for the given CSV file.
 
     Reads the file format version in the metadata (from the `format_version` key).

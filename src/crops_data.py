@@ -30,6 +30,7 @@ class CropsData:
     df_crops_interactions : pd.DataFrame
         DataFrame containing the raw interactions matrix.
     """
+
     def __init__(self, df_crops_metadata: pd.DataFrame, df_crops_interactions: pd.DataFrame):
         self.df_metadata = df_crops_metadata.copy()
         self.df_interactions = df_crops_interactions.copy()

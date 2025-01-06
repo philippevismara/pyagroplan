@@ -16,7 +16,9 @@ from abc import ABC, abstractmethod
 
 class ObjectiveFunction(ABC):
     @abstractmethod
-    def build_objective(self, model: Model, assignment_vars: Sequence[IntVar]) -> Variable: ...
+    def build_objective(
+        self, model: Model, assignment_vars: Sequence[IntVar]
+    ) -> Variable: ...
 
 
 class MaximizeNumberOfPositiveIteractionsObjective(ObjectiveFunction):
@@ -36,7 +38,9 @@ class MaximizeNumberOfPositiveIteractionsObjective(ObjectiveFunction):
     def _compute_objective_maximum(self) -> int:
         raise NotImplementedError()
 
-    def build_objective(self, model: Model, assignment_vars: Sequence[IntVar]) -> IntVar:
+    def build_objective(
+        self, model: Model, assignment_vars: Sequence[IntVar]
+    ) -> IntVar:
         n_assignments = len(assignment_vars)
         obj_var = model.intvar(self.lower_bound, self.upper_bound)
         adj_var = model.intvars((n_assignments, n_assignments), lb=0, ub=1)
@@ -53,26 +57,28 @@ class MaximizeNumberOfPositiveIteractionsObjective(ObjectiveFunction):
         constraints = []
 
         for i, a_i in enumerate(assignment_vars):
-            for j, a_j in enumerate(assignment_vars[i+1:], i+1):
+            for j, a_j in enumerate(assignment_vars[i + 1 :], i + 1):
                 if (
-                        any(
-                            frozenset((i, j)) <= interval
-                            for interval in self.crops_overlapping_intervals
-                        )
-                        and self.crops_interactions(
-                            self.crops_names[i], self.crops_names[j]
-                        ) >= 0
+                    any(
+                        frozenset((i, j)) <= interval
+                        for interval in self.crops_overlapping_intervals
+                    )
+                    and self.crops_interactions(
+                        self.crops_names[i], self.crops_names[j]
+                    )
+                    >= 0
                 ):
                     forbidden_tuples = []
                     for val1 in a_i.get_domain_values():
                         for val2 in self.beds_data.adjacency_matrix[val1]:
                             forbidden_tuples.append((val1, val2))
                             constraints.append(
-                                model.table([a_i, a_j], forbidden_tuples, feasible=False)
+                                model.table(
+                                    [a_i, a_j], forbidden_tuples, feasible=False
+                                )
                             )
 
         return obj_var
 
 
-class MaximizeNumberOfPositivePrecedences(ObjectiveFunction):
-    ...
+class MaximizeNumberOfPositivePrecedences(ObjectiveFunction): ...

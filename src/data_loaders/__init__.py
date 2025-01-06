@@ -1,4 +1,8 @@
-from .csv_data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
+from .csv_data_loaders import (
+    CSVBedsDataLoader,
+    CSVCropsCalendarLoader,
+    CSVCropsDataLoader,
+)
 
 
 __all__ = [

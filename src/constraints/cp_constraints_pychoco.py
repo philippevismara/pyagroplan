@@ -25,8 +25,13 @@ class Constraint(ABC):
 
     Child classes must implement the `build` method.
     """
+
     @abstractmethod
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint | BoolVar | LogOp]:
+    def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint | BoolVar | LogOp]:
         """Abstract method building the constraint.
 
         Parameters
@@ -58,22 +63,31 @@ class LocationConstraint(Constraint):
     forbidden : bool
         If True, implements a negative constraint.
     """
+
     def __init__(
-            self,
-            crops_calendar: CropsCalendar,
-            beds_data: BedsData,
-            beds_selection_func: Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]],
-            forbidden: bool = False,
+        self,
+        crops_calendar: CropsCalendar,
+        beds_data: BedsData,
+        beds_selection_func: Callable[
+            [pd.Series, BedsData], Sequence[int] | Sequence[bool]
+        ],
+        forbidden: bool = False,
     ):
         self.crops_calendar = crops_calendar
         self.beds_data = beds_data
         self.beds_selection_func = beds_selection_func
         self.forbidden = forbidden
 
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for crop_var, (_, crop_data) in zip(assignment_vars, self.crops_calendar.df_assignments.iterrows()):
+        for crop_var, (_, crop_data) in zip(
+            assignment_vars, self.crops_calendar.df_assignments.iterrows()
+        ):
             crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
 
             if len(crop_selected_beds) > 0:
@@ -106,12 +120,13 @@ class SuccessionConstraint(Constraint):
     implementation : str, default="pairwise"
         If "pairwise" produces binary constraints on graph's edges, if "cliques" produces global constraints on cliques.
     """
+
     def __init__(
-            self,
-            crops_calendar: CropsCalendar,
-            temporal_adjacency_graph: nx.Graph,
-            forbidden: bool,
-            implementation: str="pairwise",
+        self,
+        crops_calendar: CropsCalendar,
+        temporal_adjacency_graph: nx.Graph,
+        forbidden: bool,
+        implementation: str = "pairwise",
     ):
         self.crops_calendar = crops_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
@@ -128,10 +143,18 @@ class SuccessionConstraint(Constraint):
             )
         self._build_func = build_funcs[implementation]
 
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         return self._build_func(model, assignment_vars)
 
-    def _build_pairwise(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def _build_pairwise(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
         for i in self.temporal_adjacency_graph:
@@ -147,7 +170,11 @@ class SuccessionConstraint(Constraint):
 
         return constraints
 
-    def _build_cliques(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def _build_cliques(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
         cliques = nx.chordal_graph_cliques(self.temporal_adjacency_graph)
@@ -172,11 +199,12 @@ class SuccessionConstraintWithReinitialisation(Constraint):
     forbidden : bool
         If True, implements a negative constraint.
     """
+
     def __init__(
-            self,
-            crops_calendar: CropsCalendar,
-            temporal_adjacency_graph: nx.Graph,
-            forbidden: bool,
+        self,
+        crops_calendar: CropsCalendar,
+        temporal_adjacency_graph: nx.Graph,
+        forbidden: bool,
     ):
         self.crops_calendar = crops_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
@@ -184,10 +212,17 @@ class SuccessionConstraintWithReinitialisation(Constraint):
 
         intervals = crops_calendar.crops_calendar[:, 1:3]
         starting_weeks = intervals[:, 0]
-        assert(all(starting_weeks[i] <= starting_weeks[i+1] for i in range(len(starting_weeks) - 1)))
+        assert all(
+            starting_weeks[i] <= starting_weeks[i + 1]
+            for i in range(len(starting_weeks) - 1)
+        )
         self.starting_weeks = starting_weeks
 
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
         for i in self.temporal_adjacency_graph:
@@ -196,20 +231,23 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                     continue
 
                 if self.forbidden:
-                    if i+1 == j:
+                    if i + 1 == j:
                         constraints.append(
                             assignment_vars[i] != assignment_vars[j]
                         )
                     else:
-                        candidates_ind = range(i+1, j)
+                        candidates_ind = range(i + 1, j)
 
                         from pychoco.constraints.cnf.log_op import implies_op, or_op
                         constraints.append(
                             implies_op(
                                 assignment_vars[i] == assignment_vars[j],
                                 or_op(
-                                    *(assignment_vars[k] == assignment_vars[i] for k in candidates_ind)
-                                )
+                                    *(
+                                        assignment_vars[k] == assignment_vars[i]
+                                        for k in candidates_ind
+                                    )
+                                ),
                             )
                         )
                 else:
@@ -229,11 +267,12 @@ class BinaryNeighbourhoodConstraint(Constraint):
     forbidden : bool
         If True, implements a negative constraint.
     """
+
     def __init__(
-            self,
-            crops_calendar: CropsCalendar,
-            adjacency_graph: nx.Graph,
-            forbidden: bool,
+        self,
+        crops_calendar: CropsCalendar,
+        adjacency_graph: nx.Graph,
+        forbidden: bool,
     ):
         self.crops_calendar = crops_calendar
         self.adjacency_graph = adjacency_graph
@@ -242,7 +281,11 @@ class BinaryNeighbourhoodConstraint(Constraint):
     @abstractmethod
     def crops_selection_function(self, i: int, j: int) -> bool: ...
 
-    def build(self, model: Model, assignment_vars: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
         # itertools.combination
@@ -275,17 +318,22 @@ class GroupNeighbourhoodConstraint(Constraint):
     forbidden : bool
         If True, implements a negative constraint.
     """
+
     def __init__(
-            self,
-            crops_groups: Sequence[Sequence[int]],
-            adjacency_graph: nx.Graph,
-            forbidden: bool,
+        self,
+        crops_groups: Sequence[Sequence[int]],
+        adjacency_graph: nx.Graph,
+        forbidden: bool,
     ):
         self.crops_groups = crops_groups
         self.adjacency_graph = adjacency_graph
         self.forbidden = forbidden
 
-    def build(self, model: Model, assignment_variables: Sequence[IntVar]) -> Sequence[ChocoConstraint]:
+    def build(
+        self,
+        model: Model,
+        assignment_variables: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
         constraints = []
 
         for crops_group in self.crops_groups:
@@ -305,12 +353,18 @@ class GroupNeighbourhoodConstraint(Constraint):
                     target=self.adjacency_graph.nodes,
                     cutoff=len(crops_group),
                 )
-                candidate_paths = list(filter(lambda p: len(p) == len(crops_group), candidate_paths))
+                candidate_paths = list(
+                    filter(lambda p: len(p) == len(crops_group), candidate_paths)
+                )
 
                 allowed_tuples += candidate_paths
 
             constraints.append(
-                model.table(crops_group_assignment_vars, allowed_tuples, feasible=not self.forbidden)
+                model.table(
+                    crops_group_assignment_vars,
+                    allowed_tuples,
+                    feasible=not self.forbidden,
+                )
             )
 
         return constraints

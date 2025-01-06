@@ -1,6 +1,7 @@
 # Pyagroplan
 
 [![python-package](https://github.com/philippevismara/pyagroplan/actions/workflows/python-package.yml/badge.svg)](https://github.com/philippevismara/pyagroplan/actions)
+[![code-style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Installation
 

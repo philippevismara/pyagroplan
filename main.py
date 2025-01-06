@@ -1,7 +1,11 @@
 import argparse
 
 from src.constraints import constraints as cstrs
-from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
+from src.data_loaders import (
+    CSVBedsDataLoader,
+    CSVCropsCalendarLoader,
+    CSVCropsDataLoader,
+)
 from src.model import AgroEcoPlanModel, available_search_strategies
 
 
@@ -52,7 +56,10 @@ if __name__ == "__main__":
 
     crops_data = None
     if args.crops_metadata_path and args.crops_interactions_path:
-        crops_data = CSVCropsDataLoader.load(args.crops_metadata_path, args.crops_interactions_path)
+        crops_data = CSVCropsDataLoader.load(
+            args.crops_metadata_path,
+            args.crops_interactions_path,
+        )
 
     crops_calendar = CSVCropsCalendarLoader.load(args.crops_calendar_path, crops_data)
     beds_data = CSVBedsDataLoader.load(args.beds_data_path)

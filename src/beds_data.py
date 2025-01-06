@@ -26,6 +26,7 @@ class BedsData:
     df_beds_data : pd.DataFrame
         DataFrame containing the raw beds data.
     """
+
     def __init__(self, df_beds_data: pd.DataFrame):
         self.df_beds_data = df_beds_data.copy()
         self.beds_ids = np.asarray(df_beds_data.index.array).tolist()

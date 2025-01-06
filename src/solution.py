@@ -31,6 +31,7 @@ class Solution:
     variables : Sequence[IntVar]
         Variables of the model.
     """
+
     def __init__(self, crops_calendar: CropsCalendar, variables: Sequence[IntVar]):
         self.crops_calendar = crops_calendar
         self.variables = variables

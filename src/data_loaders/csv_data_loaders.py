@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from typing import Optional
     from collections.abc import Sequence
@@ -23,6 +24,7 @@ class CSVDataLoader:
         data = cls.data_cls(loaded_data, **kwargs)
         return data
     """
+
     ...
 
 
@@ -85,15 +87,21 @@ class CSVCropsCalendarLoader(CSVDataLoader):
         df_crops_calendar = df[["culture", "debut", "fin", "quantite"]].copy()
 
         # TODO fix the data instead
-        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.lower()
-        df_crops_calendar["culture"] = df_crops_calendar["culture"].str.replace(" ", "_")
+        df_crops_calendar["culture"] = (
+            df_crops_calendar["culture"].str
+            .lower()
+            .replace(" ", "_")
+        )
 
-        df_crops_calendar.rename(columns={
-            "culture": "crop_name",
-            "debut": "starting_week",
-            "fin": "ending_week",
-            "quantite": "allocated_beds_quantity",
-        }, inplace=True)
+        df_crops_calendar.rename(
+            columns={
+                "culture": "crop_name",
+                "debut": "starting_week",
+                "fin": "ending_week",
+                "quantite": "allocated_beds_quantity",
+            },
+            inplace=True,
+        )
 
         return df_crops_calendar
 
@@ -116,7 +124,9 @@ class CSVCropsCalendarLoader(CSVDataLoader):
         return df_crops_calendar
 
     @classmethod
-    def load(cls, filename: str, crops_data: Optional[CropsData]=None) -> CropsCalendar:
+    def load(
+        cls, filename: str, crops_data: Optional[CropsData] = None
+    ) -> CropsCalendar:
         df_crops_calendar = dispatch_to_appropriate_loader(filename, cls)
         crops_calendar = cls.data_cls(df_crops_calendar, crops_data)
         return crops_calendar
@@ -134,11 +144,14 @@ class CSVCropsDataLoader(CSVDataLoader):
             index_col="culture",
             comment="#",
         )
-        df_metadata.rename(columns={
-            "culture": "crop_name",
-            "famille": "crop_family",
-            "delai_retour": "return_delay",
-        }, inplace=True)
+        df_metadata.rename(
+            columns={
+                "culture": "crop_name",
+                "famille": "crop_family",
+                "delai_retour": "return_delay",
+            },
+            inplace=True,
+        )
 
         # TODO fix the data instead
         df_metadata["return_delay"] = df_metadata["return_delay"] * N_WEEKS_PER_YEAR
@@ -149,9 +162,12 @@ class CSVCropsDataLoader(CSVDataLoader):
             index_col="culture",
             comment="#",
         )
-        df_interactions.rename(columns={
-            "culture": "crop_name",
-        }, inplace=True)
+        df_interactions.rename(
+            columns={
+                "culture": "crop_name",
+            },
+            inplace=True,
+        )
 
         return (df_metadata, df_interactions)
 
@@ -179,6 +195,9 @@ class CSVCropsDataLoader(CSVDataLoader):
 
     @classmethod
     def load(cls, metadata_filename: str, interactions_filename: str) -> CropsData:
-        df_metadata, df_interactions = dispatch_to_appropriate_loader((metadata_filename, interactions_filename), cls)
+        df_metadata, df_interactions = dispatch_to_appropriate_loader(
+            (metadata_filename, interactions_filename),
+            cls,
+        )
         crops_data = cls.data_cls(df_metadata, df_interactions)
         return crops_data

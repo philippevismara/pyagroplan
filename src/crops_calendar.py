@@ -41,8 +41,13 @@ class CropsCalendar:
     crops_data : CropsData, optional
         Crops metadata object.
     """
-    def __init__(self, df_crops_calendar: pd.DataFrame, crops_data: Optional[CropsData]=None):
-        self.df_crops_calendar = df_crops_calendar.copy().sort_values(by="starting_week")
+
+    def __init__(
+        self, df_crops_calendar: pd.DataFrame, crops_data: Optional[CropsData] = None
+    ):
+        self.df_crops_calendar = df_crops_calendar.copy().sort_values(
+            by="starting_week"
+        )
         self.crops_data = crops_data
 
         if self.crops_data is not None:
@@ -58,7 +63,9 @@ class CropsCalendar:
         repeats = df["allocated_beds_quantity"].values.astype(int)
         self.crops_groups = np.repeat(df.index.values, repeats)
         df = df.loc[self.crops_groups]
-        self.crops_groups_assignments = np.split(np.arange(len(df)), np.cumsum(repeats)[:-1])
+        self.crops_groups_assignments = np.split(
+            np.arange(len(df)), np.cumsum(repeats)[:-1]
+        )
         df.drop(columns="allocated_beds_quantity", inplace=True)
         self.crops_calendar = df[["crop_name", "starting_week", "ending_week"]].values
 
@@ -68,7 +75,9 @@ class CropsCalendar:
 
         self.n_assignments = len(self.crops_calendar)
 
-        self._interval_graph = interval_graph(list(map(list, self.crops_calendar[:,1:].astype(int))))
+        self._interval_graph = interval_graph(
+            list(map(list, self.crops_calendar[:, 1:].astype(int)))
+        )
         self.crops_overlapping_cultivation_intervals = frozenset(
             frozenset(node for node in clique)
             for clique in nx.chordal_graph_cliques(self._interval_graph)
@@ -93,7 +102,10 @@ class CropsCalendar:
             True if all crops are being cultivated at the same time (i.e., the intersection of their cultivation intervals is not the empty set).
         """
         assert len(crops_ids) >= 2
-        return any(frozenset(crops_ids) <= interval for interval in self.crops_overlapping_cultivation_intervals)
+        return any(
+            frozenset(crops_ids) <= interval
+            for interval in self.crops_overlapping_cultivation_intervals
+        )
 
     """
     # TODO

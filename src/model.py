@@ -49,6 +49,7 @@ def _get_available_search_strategies() -> dict[str, Callable]:
 
     return available_search_strategies
 
+
 #: Dictionnary of search strategies implemented in Pychoco
 available_search_strategies = _get_available_search_strategies()
 
@@ -83,7 +84,12 @@ class AgroEcoPlanModel:
         If True, verbose output.
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData, verbose: bool=False):
+    def __init__(
+        self,
+        crops_calendar: CropsCalendar,
+        beds_data: BedsData,
+        verbose: bool = False,
+    ):
         self.crops_calendar = crops_calendar
         self.beds_data = beds_data
         self.n_assignments = self.crops_calendar.n_assignments
@@ -111,7 +117,7 @@ class AgroEcoPlanModel:
             self.verbose,
         )
 
-    def init(self, constraints: Sequence[Constraint]=tuple()) -> None:
+    def init(self, constraints: Sequence[Constraint] = tuple()) -> None:
         """Initialises the model with non-overlapping assignments constraints, symmetry breaking constraints and the constraints provided as parameter.
 
         Parameters
@@ -206,8 +212,7 @@ class AgroEcoPlanModel:
                 break
 
     def _add_non_overlapping_assignments_constraints(self) -> None:
-        """Adds non-overlapping assignments constraints as part of the basic model definition.
-        """
+        """Adds non-overlapping assignments constraints as part of the basic model definition."""
         for overlapping_crops in self.crops_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
             self.model.all_different(overlapping_assignment_vars).post()
