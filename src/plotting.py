@@ -2,33 +2,62 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from collections.abc import Collection
+    from typing import Any, Optional
 
     from .beds_data import BedsData
     from .crops_calendar import CropsCalendar
     from .crops_data import CropsData
     from .solution import Solution
 
+from itertools import cycle
 
 import networkx as nx
 import numpy as np
-import pandas as pd
 from matplotlib import colormaps
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
 
 
+def get_crops_colors_by_crop_family(
+        crops_calendar: CropsCalendar,
+        colors_list: Optional[Collection]=None,
+) -> dict[str, Any]:
+    if colors_list is None:
+        import matplotlib.colors as mcolors
+        colors_list = mcolors.TABLEAU_COLORS.keys()
+
+    families_names = crops_calendar.df_crops_calendar["crop_family"].unique()
+    families_names.sort()
+
+    fam_colors = {
+        family_name: color
+        for family_name, color in zip(families_names, cycle(colors_list))
+    }
+
+    crops_data = crops_calendar.df_crops_calendar.drop_duplicates(subset=["crop_name", "crop_family"])
+
+    crops_colors = {
+        crop_data.crop_name: fam_colors[crop_data.crop_family]
+        for crop_data in crops_data.itertuples()
+    }
+
+    return crops_colors
+
+
 def plot_crops_calendar(
         crops_calendar: CropsCalendar,
         ax: Optional[plt.Axes]=None,
-        colors: Optional[dict]=None
+        colors: Optional[dict|str]="auto",
 ) -> plt.Axes:
     if not ax:
         fig = plt.figure(figsize=(5, 5))
         ax = fig.gca()
 
     colors = colors or {}
+    if colors == "auto":
+        colors = get_crops_colors_by_crop_family(crops_calendar)
 
     df_crops_calendar = crops_calendar.df_crops_calendar[["crop_name", "starting_week", "ending_week", "allocated_beds_quantity"]]
     first_week = df_crops_calendar["starting_week"].min()
@@ -142,7 +171,7 @@ def plot_interactions_graph(
 def plot_solution(
         solution: Solution,
         beds_data: BedsData,
-        colors: Optional[dict]=None,
+        colors: Optional[dict|str]="auto",
         ax: Optional[plt.Axes]=None,
 ) -> plt.Axes:
     if not ax:
@@ -151,6 +180,8 @@ def plot_solution(
 
     from collections import defaultdict
     colors = colors if colors is not None else defaultdict()
+    if colors == "auto":
+        colors = get_crops_colors_by_crop_family(solution.crops_calendar)
 
     beds_adjacency_graph = beds_data.get_adjacency_graph()
     plots_data = [(list(cc)[0], len(cc)) for cc in nx.connected_components(beds_adjacency_graph)]
