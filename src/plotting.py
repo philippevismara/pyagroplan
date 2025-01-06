@@ -86,9 +86,26 @@ def plot_beds_adjacency_graph(
         ax = fig.gca()
 
     beds_adjacency_graph = beds_data.get_adjacency_graph()
+
+    if "garden_id" in beds_data.df_beds_data.columns:
+        gb = beds_data.df_beds_data.groupby("garden_id")
+        gardens = gb.groups
+    else:
+        components = nx.connected_components(beds_adjacency_graph)
+        gardens = {
+            i: nodes
+            for i, nodes in enumerate(components)
+        }
+
+    layout = nx.multipartite_layout(
+        beds_adjacency_graph,
+        subset_key=gardens,
+        align="horizontal",
+    )
+
     nx.draw_networkx(
         beds_adjacency_graph,
-        nx.circular_layout(beds_adjacency_graph),
+        layout,
         node_color="gray",
         ax=ax,
     )
