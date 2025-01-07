@@ -196,7 +196,27 @@ class AgroEcoPlanModel:
         if not has_solution:
             raise RuntimeError("No solution found")
         else:
-            return Solution(self.crops_calendar, self.assignment_vars)
+            variables_values = self._extract_variables_values(self.assignment_vars)
+            return Solution(self.crops_calendar, variables_values)
+
+    def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:
+        """Extacts the instantiated values of the variables.
+
+        Parameters
+        ----------
+        variables :
+            List of variables.
+
+        Returns
+        -------
+        List of ints
+        """
+        #variables_names = [var.name for var in variables]
+        variables_values = [var.get_value() for var in variables]
+        # TODO variables = choco_solution.retrieveIntVars()
+        return variables_values
+
+
 
     def iterate_over_all_solutions(self) -> Generator[Solution]:
         """Iterator over all solutions.

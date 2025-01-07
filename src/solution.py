@@ -5,8 +5,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from pychoco.variables.intvar import IntVar
-
     from .crops_calendar import CropsCalendar
 
 import pandas as pd
@@ -28,23 +26,19 @@ class Solution:
     ----------
     crops_calendar : CropsCalendar
         Crops calendar used in the model.
-    variables : Sequence[IntVar]
+    assignments : Sequence[int]
         Variables of the model.
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, variables: Sequence[IntVar]):
+    def __init__(self, crops_calendar: CropsCalendar, assignments: Sequence[int]):
         self.crops_calendar = crops_calendar
-        self.variables = variables
-
-        self.variables_names = [var.name for var in variables]
-        self.variables_values = [var.get_value() for var in variables]
-        # TODO self.variables = choco_solution.retrieveIntVars()
+        self.assignments = assignments
 
         self.crops_planning = pd.DataFrame({
             "crop_name": self.crops_calendar.df_assignments["crop_name"],
             "starting_week": self.crops_calendar.df_assignments["starting_week"],
             "ending_week": self.crops_calendar.df_assignments["ending_week"],
-            "assignment": self.variables_values
+            "assignment": assignments,
         })
         self.crops_planning.sort_index(inplace=True)
 
