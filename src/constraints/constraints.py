@@ -16,8 +16,8 @@ from .cp_constraints_pychoco import (
 )
 
 
-class CropsRotationConstraint(SuccessionConstraint):
-    """Enforces crops rotation based on a return delay.
+class FamilyCropsRotationConstraint(SuccessionConstraint):
+    """Enforces crops rotation based on a return delay for each botanical family.
 
     Parameters
     ----------

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from ..beds_data import BedsData
     from ..crops_calendar import CropsCalendar
     from ..model import Model
+    from ..solution import Solution
 
 from abc import ABC, abstractmethod
 
@@ -186,6 +187,26 @@ class SuccessionConstraint(Constraint):
                 model.all_equal(overlapping_assignment_vars).post()
 
         return constraints
+
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        violated_constraints = []
+
+        assignments = solution.crops_planning
+
+        cliques = nx.chordal_graph_cliques(self.temporal_adjacency_graph)
+        for clique in cliques:
+            df = assignments.iloc[list(clique)]
+            groups = df.groupby("assignment").groups
+
+            if self.forbidden:
+                violations = {k : df.loc[v] for k, v in groups.items() if len(v) > 1}
+            else:
+                violations = {k : df.loc[v] for k, v in groups.items() if len(v) != len(clique)}
+
+            if len(violations) > 0:
+                violated_constraints.append(violations)
+
+        return (len(violated_constraints) == 0), violated_constraints
 
 
 class SuccessionConstraintWithReinitialisation(Constraint):

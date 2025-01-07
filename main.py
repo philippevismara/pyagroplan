@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     # Scenario 2
     constraints = [
-        cstrs.CropsRotationConstraint(crops_calendar),
+        cstrs.FamilyCropsRotationConstraint(crops_calendar),
         cstrs.DiluteSpeciesConstraint(crops_calendar, beds_data),
     ]
 

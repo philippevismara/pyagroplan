@@ -47,8 +47,8 @@ def test_forbid_negative_interactions_constraint(crops_calendar, beds_data):
         crops_planning = solution.crops_planning["assignment"].values
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[3])
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[4])
-        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[3])
-        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[4])
+        assert not beds_data.adjacency_function(crops_planning[6], crops_planning[3])
+        assert not beds_data.adjacency_function(crops_planning[6], crops_planning[4])
 
 
 def test_forbid_negative_interactions_subintervals_constraint(crops_calendar, beds_data):
@@ -77,8 +77,8 @@ def test_forbid_negative_interactions_subintervals_constraint(crops_calendar, be
 
     for solution in solutions:
         crops_planning = solution.crops_planning["assignment"].values
-        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[3])
-        assert not beds_data.adjacency_function(crops_planning[7], crops_planning[4])
+        assert not beds_data.adjacency_function(crops_planning[6], crops_planning[3])
+        assert not beds_data.adjacency_function(crops_planning[6], crops_planning[4])
 
 
 def test_dilute_species_constraint(crops_calendar, beds_data):
@@ -123,10 +123,10 @@ def test_dilute_family_constraint(crops_calendar, beds_data):
         assert not beds_data.adjacency_function(crops_planning[4], crops_planning[5])
 
 
-def test_crops_rotation_constraint(crops_calendar, beds_data):
+def test_family_crops_rotation_constraint(crops_calendar, beds_data):
     model = AgroEcoPlanModel(crops_calendar, beds_data, verbose=False)
 
-    constraint = cstrs.CropsRotationConstraint(
+    constraint = cstrs.FamilyCropsRotationConstraint(
         crops_calendar
     )
     model.init([constraint])
@@ -136,9 +136,7 @@ def test_crops_rotation_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
-        crops_planning = solution.crops_planning["assignment"].values
-
-        assert len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
+        assert constraint.check_solution(solution)[0]
 
 
 def test_category_crops_rotation_constraint(crops_calendar, beds_data):
@@ -166,9 +164,7 @@ def test_category_crops_rotation_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
-        crops_planning = solution.crops_planning["assignment"].values
-
-        assert len(np.intersect1d(crops_planning[3:5], crops_planning[[6]])) == 0
+        assert constraint.check_solution(solution)[0]
 
 
 def test_group_identical_crops_together_constraint(crops_calendar, beds_data):
@@ -273,7 +269,6 @@ def test_crops_precedences_constraint(crops_calendar, beds_data):
         crops_planning = solution.crops_planning["assignment"].values
 
         assert (
-            len(np.intersect1d(crops_planning[:3], crops_planning[6:7])) == 0
-            or any(crops_planning[3:6] == crops_planning[6])
-            or (crops_planning[-1] == crops_planning[6])
+            len(np.intersect1d(crops_planning[:3], crops_planning[7:8])) == 0
+            or any(crops_planning[3:7] == crops_planning[7])
         )

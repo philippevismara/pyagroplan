@@ -63,6 +63,8 @@ class CropsCalendar:
         repeats = df["allocated_beds_quantity"].values.astype(int)
         self.crops_groups = np.repeat(df.index.values, repeats)
         df = df.loc[self.crops_groups]
+        df.reset_index(names="crop_group_id", inplace=True)
+        df.reset_index(names="crop_id", inplace=True)
         self.crops_groups_assignments = np.split(
             np.arange(len(df)), np.cumsum(repeats)[:-1]
         )

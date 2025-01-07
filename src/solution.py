@@ -35,6 +35,7 @@ class Solution:
         self.assignments = assignments
 
         self.crops_planning = pd.DataFrame({
+            "crop_id": self.crops_calendar.df_assignments["crop_id"],
             "crop_name": self.crops_calendar.df_assignments["crop_name"],
             "starting_week": self.crops_calendar.df_assignments["starting_week"],
             "ending_week": self.crops_calendar.df_assignments["ending_week"],
