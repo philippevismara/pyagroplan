@@ -81,8 +81,7 @@ class CropsCalendar:
             list(map(list, self.crops_calendar[:, 1:].astype(int)))
         )
         self.crops_overlapping_cultivation_intervals = frozenset(
-            frozenset(node for node in clique)
-            for clique in nx.chordal_graph_cliques(self._interval_graph)
+            nx.chordal_graph_cliques(self._interval_graph)
         )
 
     def __str__(self) -> str:
@@ -109,8 +108,22 @@ class CropsCalendar:
             for interval in self.crops_overlapping_cultivation_intervals
         )
 
-    """
-    # TODO
-    def overlapping_cultures_iter(self, subset_size=None) -> bool:
-        raise NotImplementedError()
-    """
+    def overlapping_cultures_iter(self, subset_size: int = 2) -> list[tuple[int]]:
+        """Generates tuples of crops that are being cultivated at the same time.
+
+        Parameters
+        ----------
+        subset_size : int (default: 2)
+            Size of the subsets of overlapping crops to generate (by default generate pairs of overlapping crops).
+
+        Returns
+        -------
+        list of tuples of ints
+        """
+        from itertools import combinations
+        overlapping_subsets = [
+            overlapping_subset
+            for clique in self.crops_overlapping_cultivation_intervals
+            for overlapping_subset in combinations(clique, subset_size)
+        ]
+        return sorted(set(overlapping_subsets))
