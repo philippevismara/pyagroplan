@@ -5,7 +5,6 @@ if TYPE_CHECKING:
     from typing import Callable
     from collections.abc import Sequence
 
-    import pandas as pd
     from pychoco.constraints.cnf.log_op import LogOp
     from pychoco.constraints.constraint import Constraint as ChocoConstraint
     from pychoco.variables.boolvar import BoolVar
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
 from abc import ABC, abstractmethod
 
 import networkx as nx
+import pandas as pd
 
 
 class Constraint(ABC):
@@ -46,6 +46,24 @@ class Constraint(ABC):
         -------
         Sequence
             Either a sequence of Pychoco constraints or of BoolVar.
+        """
+        ...
+
+    @abstractmethod
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        """Abstract method checking if the provided solution satisfies the constraint.
+
+        Parameters
+        ----------
+        solution : Solution
+            Solution to check.
+
+        Returns
+        -------
+        bool
+            True if the solution satisfies the constraint.
+        list
+            List of assignments violating the constraint.
         """
         ...
 
@@ -102,6 +120,28 @@ class LocationConstraint(Constraint):
                 constraints.append(crop_constraints)
 
         return constraints
+
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        violated_constraints = []
+
+        df = pd.merge(
+            solution.crops_planning,
+            solution.crops_calendar.df_assignments,
+            on="crop_id",
+        )
+
+        for _, crop_data in df.iterrows():
+            crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
+
+            if len(crop_selected_beds) > 0:
+                crop_selected_beds = list(map(int, crop_selected_beds))
+
+                if self.forbidden and crop_data["assignment"] in crop_selected_beds:
+                    violated_constraints.append(crop_data)
+                elif not self.forbidden and crop_data["assignment"] not in crop_selected_beds:
+                    violated_constraints.append(crop_data)
+
+        return (len(violated_constraints) == 0), violated_constraints
 
 
 class SuccessionConstraint(Constraint):
@@ -276,6 +316,31 @@ class SuccessionConstraintWithReinitialisation(Constraint):
 
         return constraints
 
+    # TODO
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        violated_constraints = []
+
+        assignments = solution.crops_planning
+
+        for i in self.temporal_adjacency_graph:
+            for j in self.temporal_adjacency_graph[i]:
+                if i > j:
+                    continue
+
+                a_i, a_j = assignments.iloc[i], assignments.iloc[j]
+                min_start_week = min(a_i["starting_week"], a_j["starting_week"])
+                max_start_week = max(a_i["starting_week"], a_j["starting_week"])
+                if (
+                    self.forbidden
+                    and a_i["assignment"] == a_j["assignment"]
+                    and not any((assignments["starting_week"] > min_start_week) & (assignments["starting_week"] < max_start_week) & (assignments["assignment"] == a_i["assignment"]))
+                ):
+                    violated_constraints.append([a_i, a_j])
+                elif not self.forbidden:
+                    raise NotImplementedError()
+
+        return (len(violated_constraints) == 0), violated_constraints
+
 
 class BinaryNeighbourhoodConstraint(Constraint):
     """Implements spatial proximity constraints for pairs of crops.
@@ -309,23 +374,37 @@ class BinaryNeighbourhoodConstraint(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        # itertools.combination
-        for i, a_i in enumerate(assignment_vars):
-            for j, a_j in enumerate(assignment_vars[i+1:], i+1):
-                if (
-                    self.crops_calendar.is_overlapping_cultures((i, j))
-                    and self.crops_selection_function(i, j)
-                ):
-                    tuples = []
-                    for val1 in a_i.get_domain_values():
-                        for val2 in self.adjacency_graph[val1]: # more general adjacency criteria? (node distance higher than 1? sharing the same connected component?)
-                            tuples.append((val1, val2))
+        for i, j in self.crops_calendar.overlapping_cultures_iter(2):
+            if self.crops_selection_function(i, j):
+                a_i, a_j = assignment_vars[i], assignment_vars[j]
 
-                    constraints.append(
-                        model.table([a_i, a_j], tuples, feasible=not self.forbidden)
-                    )
+                tuples = []
+                for val1 in a_i.get_domain_values():
+                    for val2 in self.adjacency_graph[val1]: # more general adjacency criteria? (node distance higher than 1? sharing the same connected component?)
+                        tuples.append((val1, val2))
+
+                constraints.append(
+                    model.table([a_i, a_j], tuples, feasible=not self.forbidden)
+                )
 
         return constraints
+
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        violated_constraints = []
+
+        assignments = solution.crops_planning
+
+        for i, j in self.crops_calendar.overlapping_cultures_iter(2):
+            if self.crops_selection_function(i, j):
+                a_i, a_j = assignments.iloc[i], assignments.iloc[j]
+
+                if self.forbidden and self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"]):
+                    violated_constraints.append([a_i, a_j])
+                elif not self.forbidden and not self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"]):
+                    violated_constraints.append([a_i, a_j])
+
+        return (len(violated_constraints) == 0), violated_constraints
+
 
 
 class GroupNeighbourhoodConstraint(Constraint):
@@ -389,3 +468,21 @@ class GroupNeighbourhoodConstraint(Constraint):
             )
 
         return constraints
+
+    def check_solution(self, solution: Solution) -> tuple[bool, list]:
+        violated_constraints = []
+
+        assignments = solution.crops_planning
+
+        import networkx as nx
+        for crops_group in self.crops_groups:
+            beds = assignments.iloc[crops_group]["assignment"]
+
+            subgraph = nx.induced_subgraph(self.adjacency_graph, beds)
+
+            if self.forbidden and len(subgraph.edges) > 0:
+                violated_constraints.append(crops_group)
+            elif not self.forbidden and not nx.is_connected(subgraph):
+                violated_constraints.append(crops_group)
+
+        return (len(violated_constraints) == 0), violated_constraints

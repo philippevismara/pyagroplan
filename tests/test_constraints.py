@@ -44,6 +44,8 @@ def test_forbid_negative_interactions_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[3])
         assert not beds_data.adjacency_function(crops_planning[5], crops_planning[4])
@@ -76,6 +78,8 @@ def test_forbid_negative_interactions_subintervals_constraint(crops_calendar, be
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
         assert not beds_data.adjacency_function(crops_planning[6], crops_planning[3])
         assert not beds_data.adjacency_function(crops_planning[6], crops_planning[4])
@@ -92,6 +96,8 @@ def test_dilute_species_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
 
         assert not beds_data.adjacency_function(crops_planning[0], crops_planning[1])
@@ -112,6 +118,8 @@ def test_dilute_family_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
 
         assert not beds_data.adjacency_function(crops_planning[0], crops_planning[1])
@@ -181,6 +189,8 @@ def test_group_identical_crops_together_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
 
         assert beds_data.adjacency_function(crops_planning[0], crops_planning[1])
@@ -227,6 +237,8 @@ def test_crops_location_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
 
         # Tomatos in the sun
@@ -266,6 +278,8 @@ def test_crops_precedences_constraint(crops_calendar, beds_data):
     assert len(solutions) > 0
 
     for solution in solutions:
+        assert constraint.check_solution(solution)[0]
+
         crops_planning = solution.crops_planning["assignment"].values
 
         assert (
