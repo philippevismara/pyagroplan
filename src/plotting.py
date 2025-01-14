@@ -24,9 +24,8 @@ def get_crops_colors_by_crop_family(
     colors_list: Optional[Collection] = None,
 ) -> dict[str, Any]:
     if colors_list is None:
-        import matplotlib.colors as mcolors
-
-        colors_list = mcolors.TABLEAU_COLORS.keys()
+        from matplotlib import colormaps
+        colors_list = colormaps["tab20"].colors
 
     families_names = crops_calendar.df_crops_calendar["crop_family"].unique()
     families_names.sort()
