@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
     from .crops_calendar import CropsCalendar
 
+import numpy as np
 import pandas as pd
 
 
@@ -37,7 +38,7 @@ class Solution:
             "crop_name": self.crops_calendar.df_assignments["crop_name"],
             "starting_week": self.crops_calendar.df_assignments["starting_week"],
             "ending_week": self.crops_calendar.df_assignments["ending_week"],
-            "assignment": assignments,
+            "assignment": np.asarray(assignments, dtype=int),
         })
         self.crops_planning.sort_index(inplace=True)
 

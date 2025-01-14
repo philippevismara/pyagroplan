@@ -124,10 +124,11 @@ class LocationConstraint(Constraint):
     def check_solution(self, solution: Solution) -> tuple[bool, list]:
         violated_constraints = []
 
+        on = list(solution.crops_planning.columns.difference(["assignment"]))
         df = pd.merge(
             solution.crops_planning,
             solution.crops_calendar.df_assignments,
-            on="crop_id",
+            on=on,
         )
 
         for _, crop_data in df.iterrows():
@@ -136,9 +137,9 @@ class LocationConstraint(Constraint):
             if len(crop_selected_beds) > 0:
                 crop_selected_beds = list(map(int, crop_selected_beds))
 
-                if self.forbidden and crop_data["assignment"] in crop_selected_beds:
+                if self.forbidden and (crop_data["assignment"] in crop_selected_beds):
                     violated_constraints.append(crop_data)
-                elif not self.forbidden and crop_data["assignment"] not in crop_selected_beds:
+                elif (not self.forbidden) and (crop_data["assignment"] not in crop_selected_beds):
                     violated_constraints.append(crop_data)
 
         return (len(violated_constraints) == 0), violated_constraints
@@ -218,13 +219,17 @@ class SuccessionConstraint(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        cliques = nx.chordal_graph_cliques(self.temporal_adjacency_graph)
+        cliques = nx.find_cliques(self.temporal_adjacency_graph)
         for clique in cliques:
             overlapping_assignment_vars = assignment_vars[list(clique)]
             if self.forbidden:
-                model.all_different(overlapping_assignment_vars).post()
+                constraints.append(
+                    model.all_different(overlapping_assignment_vars)
+                )
             else:
-                model.all_equal(overlapping_assignment_vars).post()
+                constraints.append(
+                    model.all_equal(overlapping_assignment_vars)
+                )
 
         return constraints
 
@@ -233,7 +238,7 @@ class SuccessionConstraint(Constraint):
 
         assignments = solution.crops_planning
 
-        cliques = nx.chordal_graph_cliques(self.temporal_adjacency_graph)
+        cliques = nx.find_cliques(self.temporal_adjacency_graph)
         for clique in cliques:
             df = assignments.iloc[list(clique)]
             groups = df.groupby("assignment").groups
@@ -332,8 +337,8 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                 max_start_week = max(a_i["starting_week"], a_j["starting_week"])
                 if (
                     self.forbidden
-                    and a_i["assignment"] == a_j["assignment"]
-                    and not any((assignments["starting_week"] > min_start_week) & (assignments["starting_week"] < max_start_week) & (assignments["assignment"] == a_i["assignment"]))
+                    and (a_i["assignment"] == a_j["assignment"])
+                    and (not any((assignments["starting_week"] > min_start_week) & (assignments["starting_week"] < max_start_week) & (assignments["assignment"] == a_i["assignment"])))
                 ):
                     violated_constraints.append([a_i, a_j])
                 elif not self.forbidden:
@@ -400,7 +405,7 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
                 if self.forbidden and self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"]):
                     violated_constraints.append([a_i, a_j])
-                elif not self.forbidden and not self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"]):
+                elif (not self.forbidden) and (not self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"])):
                     violated_constraints.append([a_i, a_j])
 
         return (len(violated_constraints) == 0), violated_constraints
@@ -480,9 +485,9 @@ class GroupNeighbourhoodConstraint(Constraint):
 
             subgraph = nx.induced_subgraph(self.adjacency_graph, beds)
 
-            if self.forbidden and len(subgraph.edges) > 0:
+            if self.forbidden and (len(subgraph.edges) > 0):
                 violated_constraints.append(crops_group)
-            elif not self.forbidden and not nx.is_connected(subgraph):
+            elif (not self.forbidden) and (not nx.is_connected(subgraph)):
                 violated_constraints.append(crops_group)
 
         return (len(violated_constraints) == 0), violated_constraints
