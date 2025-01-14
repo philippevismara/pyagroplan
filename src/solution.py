@@ -17,17 +17,15 @@ class Solution:
     ----------
     crops_calendar : CropsCalendar
         Crops calendar used in the model.
-    variables : Sequence[IntVar]
-        Variables of the model.
-    crops_planning : pd.DataFrame
-        Solution as a `DataFrame` with two columns with the crop name and
+    assignments : Sequence[int]
+        Assignments of crops to beds.
 
     Parameters
     ----------
     crops_calendar : CropsCalendar
         Crops calendar used in the model.
     assignments : Sequence[int]
-        Variables of the model.
+        Assignments of crops to beds.
     """
 
     def __init__(self, crops_calendar: CropsCalendar, assignments: Sequence[int]):
