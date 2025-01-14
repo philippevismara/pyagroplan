@@ -46,7 +46,7 @@ class CropsCalendar:
         self, df_crops_calendar: pd.DataFrame, crops_data: Optional[CropsData] = None
     ):
         self.df_crops_calendar = df_crops_calendar.copy().sort_values(
-            by="starting_week"
+            by=["starting_week", "ending_week", "crop_name", "allocated_beds_quantity"]
         )
         self.crops_data = crops_data
 
