@@ -22,7 +22,12 @@ def df_crops_calendar():
         ],
         columns=["crop_name", "category", "starting_week", "ending_week", "allocated_beds_quantity"],
     )
-    return df_crops_calendar.sort_values(by="starting_week")
+    return df_crops_calendar.sort_values(by=[
+        "starting_week",
+        "ending_week",
+        "crop_name",
+        "allocated_beds_quantity",
+    ])
 
 
 def test_crops_calendar_loader(df_crops_calendar):
@@ -41,6 +46,7 @@ def test_crops_calendar(df_crops_calendar):
         [3, 4],
         [5, ],
         [6, ],
+        [7, ],
     ]
     for group, expected_group in zip(crops_calendar.crops_groups_assignments, expected_groups):
         np.testing.assert_array_equal(group, expected_group)
@@ -48,5 +54,5 @@ def test_crops_calendar(df_crops_calendar):
     assert crops_calendar.crops_overlapping_cultivation_intervals == frozenset((
         frozenset((0, 1, 2, 3, 4)),
         frozenset((3, 4, 5, 6)),
-        frozenset((5, 7)),
+        frozenset((6, 7)),
     ))
