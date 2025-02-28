@@ -3,10 +3,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..beds_data import BedsData
-    from ..crops_calendar import CropsCalendar
+    from ..crop_calendar import CropCalendar
 
     import pandas as pd
 
+import datetime
+    
 from .cp_constraints_pychoco import (
     BinaryNeighbourhoodConstraint,
     GroupNeighbourhoodConstraint,
@@ -21,60 +23,68 @@ class FamilyCropsRotationConstraint(SuccessionConstraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     """
 
-    def __init__(self, crops_calendar: CropsCalendar):
+    def __init__(self, crop_calendar: CropCalendar):
         """
         TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
             and separators should be sufficient, but we should prove it to be sure.
         """
-        self.return_delay = crops_calendar.df_assignments["return_delay"].values
-        self.families = crops_calendar.df_assignments["crop_family"].values
+        self.return_delay = crop_calendar.df_assignments["return_delay"].values
+        self.families = crop_calendar.df_assignments["crop_family"].values
 
-        intervals = crops_calendar.crops_calendar[:, 1:3]
-        intervals[:, -1] += self.return_delay
+        intervals = crop_calendar.cropping_intervals
+        # TODO get return delays with units from the start
+        import pandas as pd
+        intervals["ending_date"] += pd.to_timedelta(self.return_delay, unit="W")
         from ..utils.interval_graph import interval_graph
         temporal_adjacency_graph = interval_graph(
-            list(map(list, intervals)),
+            intervals,
             filter_func=lambda i, j: self.families[i] == self.families[j],
         )
 
-        super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
 
 
-class CategoryCropsRotationConstraint(SuccessionConstraint):
-    """Enforces crops rotation based on a return delay matrix between species.
+class CropTypesRotationConstraint(SuccessionConstraint):
+    """Enforces crops rotation based on a return delay matrix between crop types.
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     return_delays : pd.DataFrame
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, return_delays: pd.DataFrame):
+    def __init__(self, crop_calendar: CropCalendar, return_delays: pd.DataFrame):
         self.return_delays = return_delays
 
         import networkx as nx
-        category_return_delays_graph = nx.from_pandas_adjacency(return_delays, nx.DiGraph)
+        crop_type_return_delays_graph = nx.from_pandas_adjacency(return_delays, nx.DiGraph)
 
-        intervals = crops_calendar.crops_calendar[:, 1:3]
+        intervals = crop_calendar.cropping_intervals
 
-        start = intervals[:, 0]
-        category = crops_calendar.df_assignments["category"].values
+        start = intervals["starting_date"].values
+        crop_type = crop_calendar.df_assignments["crop_type"].values
         def filter_func(i: int, j: int) -> bool:
             return (
-                (category[i], category[j]) in category_return_delays_graph.edges
-                and (start[i] + category_return_delays_graph.edges[category[i], category[j]]["weight"] >= start[j])
+                (crop_type[i], crop_type[j]) in crop_type_return_delays_graph.edges
+                and (
+                    start[i]
+                    + datetime.timedelta(
+                        weeks=crop_type_return_delays_graph.edges[crop_type[i], crop_type[j]]["weight"]
+                    ) >= start[j]
+                )
             )
 
         from ..utils.interval_graph import build_graph
         temporal_adjacency_graph = build_graph(
-            list(map(list, intervals)),
+            intervals,
             filter_func=filter_func,
+            #node_ids=intervals.index,
         )
 
-        super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
 
 
 class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
@@ -82,22 +92,24 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
+    adjacency_name : string
     """
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         beds_data: BedsData,
+        adjacency_name: str,
     ):
-        adjacency_graph = beds_data.get_adjacency_graph()
-        super().__init__(crops_calendar, adjacency_graph, forbidden=True)
+        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
 
-        if not crops_calendar.crops_data:
+        if not crop_calendar.crops_data:
             raise ValueError("No crops interaction data can be found")
-        self.crops_interactions = crops_calendar.crops_data.crops_interactions
-        self.crops_names = crops_calendar.crops_names
+        self.crops_interactions = crop_calendar.crops_data.crops_interactions
+        self.crops_names = crop_calendar.crops_names
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops with negative interactions.
@@ -112,22 +124,23 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
+    adjacency_name : string
     """
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
+        crops_interaction_matrix,
         beds_data: BedsData,
+        adjacency_name: str,
     ):
-        adjacency_graph = beds_data.get_adjacency_graph()
-        super().__init__(crops_calendar, adjacency_graph, forbidden=True)
+        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
 
-        if not crops_calendar.crops_data:
-            raise ValueError("No crops interaction data can be found")
-        self.crops_interactions = crops_calendar.crops_data.crops_interactions
-        self.crops_category = crops_calendar.df_assignments["category"].array
+        self.crops_interaction_matrix = crops_interaction_matrix
+        self.crop_types = crop_calendar.df_assignments["crop_type"].array
 
         import re
 
@@ -142,9 +155,9 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
 
         :meta private:
         """
-        interaction_str = self.crops_interactions(
-            self.crops_category[i], self.crops_category[j]
-        )
+        interaction_str = self.crops_interaction_matrix.loc[
+            self.crop_types[i], self.crop_types[j]
+        ]
 
         import numpy as np
         if (
@@ -166,28 +179,29 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
             return False
 
         interval1, interval2 = (
-            self.crops_calendar.df_assignments
+            self.crop_calendar.df_assignments
             .iloc[[i, j]]
-            .loc[:, ["starting_week", "ending_week"]]
+            .loc[:, ["starting_date", "ending_date"]]
             .values
         )
+
         interval1_final, interval2_final = interval1.copy(), interval2.copy()
         if s1 >= 0:
-            interval1_final[0] = interval1[0] + max(0, s1 - 1)
+            interval1_final[0] = interval1[0] + datetime.timedelta(weeks=max(0, s1 - 1))
         else:
-            interval1_final[0] = interval1[1] + min(0, s1 + 1)
+            interval1_final[0] = interval1[1] + datetime.timedelta(weeks=min(0, s1 + 1))
         if e1 >= 0:
-            interval1_final[1] = interval1[0] + max(0, e1 - 1)
+            interval1_final[1] = interval1[0] + datetime.timedelta(weeks=max(0, e1 - 1))
         else:
-            interval1_final[1] = interval1[1] + min(0, e1 + 1)
+            interval1_final[1] = interval1[1] + datetime.timedelta(weeks=min(0, e1 + 1))
         if s2 >= 0:
-            interval2_final[0] = interval2[0] + max(0, s2 - 1)
+            interval2_final[0] = interval2[0] + datetime.timedelta(weeks=max(0, s2 - 1))
         else:
-            interval2_final[0] = interval2[1] + min(0, s2 + 1)
+            interval2_final[0] = interval2[1] + datetime.timedelta(weeks=min(0, s2 + 1))
         if e2 >= 0:
-            interval2_final[1] = interval2[0] + max(0, e2 - 1)
+            interval2_final[1] = interval2[0] + datetime.timedelta(weeks=max(0, e2 - 1))
         else:
-            interval2_final[1] = interval2[1] + min(0, e2 + 1)
+            interval2_final[1] = interval2[1] + datetime.timedelta(weeks=min(0, e2 + 1))
 
         return (
             (interval1_final[0] <= interval2_final[1])
@@ -200,14 +214,20 @@ class DiluteSpeciesConstraint(BinaryNeighbourhoodConstraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
+    adjacency_name: string
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
-        adjacency_graph = beds_data.get_adjacency_graph()
-        super().__init__(crops_calendar, adjacency_graph, forbidden=True)
-        self.crops_species = crops_calendar.crops_names
+    def __init__(
+        self,
+        crop_calendar: CropCalendar,
+        beds_data: BedsData,
+        adjacency_name: str,
+    ):
+        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
+        self.crops_species = crop_calendar.df_future_assignments["crop_name"].array
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops from identical species.
@@ -222,14 +242,20 @@ class DiluteFamilyConstraint(BinaryNeighbourhoodConstraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
+    adjacency_name : string
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
-        adjacency_graph = beds_data.get_adjacency_graph()
-        super().__init__(crops_calendar, adjacency_graph, forbidden=True)
-        self.crops_families = crops_calendar.df_assignments["crop_family"].array
+    def __init__(
+        self,
+        crop_calendar: CropCalendar,
+        beds_data: BedsData,
+        adjacency_name: str,
+    ):
+        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
+        self.crops_families = crop_calendar.df_future_assignments["crop_family"].array
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops from identical family.
@@ -244,39 +270,49 @@ class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
+    adjacency_name : string
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, beds_data: BedsData):
-        adjacency_graph = beds_data.get_adjacency_graph()
-        groups = crops_calendar.crops_groups_assignments
+    def __init__(
+        self,
+        crop_calendar: CropCalendar,
+        beds_data: BedsData,
+        adjacency_name: str,
+    ):
+        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+        groups = crop_calendar.crops_groups_assignments
         super().__init__(groups, adjacency_graph, forbidden=False)
 
 
 class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):
-    def __init__(self, crops_calendar: CropsCalendar, precedences: pd.DataFrame):
+    def __init__(self, crop_calendar: CropCalendar, precedences: pd.DataFrame):
         import networkx as nx
         precedences_graph = nx.from_pandas_adjacency(precedences, nx.DiGraph)
 
-        intervals = crops_calendar.crops_calendar[:, 1:3]
-        starting_weeks = intervals[:, 0]
-        category = crops_calendar.df_assignments["category"].values
+        intervals = crop_calendar.cropping_intervals
+        starting_dates = crop_calendar.df_assignments["starting_date"].values
+        global_starting_date = crop_calendar.global_starting_date
+        crop_types = crop_calendar.df_assignments["crop_type"].values
 
         def filter_func(i: int, j: int) -> bool:
             return (
-                (category[i], category[j]) in precedences_graph.edges
-                and (precedences_graph.edges[category[i], category[j]]["weight"] <= 0)
+                (global_starting_date <= max(starting_dates[i], starting_dates[j]))
+                and (crop_types[i], crop_types[j]) in precedences_graph.edges
+                and (precedences_graph.edges[crop_types[i], crop_types[j]]["weight"] <= 0)
                 and (
-                    starting_weeks[i]
-                    - precedences_graph.edges[category[i], category[j]]["weight"]
-                    >= starting_weeks[j]
+                    starting_dates[i]
+                    - datetime.timedelta(
+                        weeks=precedences_graph.edges[crop_types[i], crop_types[j]]["weight"]
+                    )
+                    >= starting_dates[j]
                 )
             )
 
         from ..utils.interval_graph import build_graph
         temporal_adjacency_graph = build_graph(
-            list(map(list, intervals)),
+            intervals,
             filter_func=filter_func,
         )
-        super().__init__(crops_calendar, temporal_adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)

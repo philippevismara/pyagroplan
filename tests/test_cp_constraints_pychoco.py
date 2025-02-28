@@ -3,7 +3,7 @@ from pathlib import Path
 
 from src.constraints import cp_constraints_pychoco as cstrs
 from src.constraints import constraints as cstrs2
-from src.data_loaders import CSVBedsDataLoader, CSVCropsCalendarLoader, CSVCropsDataLoader
+from src.data_loaders import CSVBedsDataLoader, CSVCropCalendarLoader, CSVCropsDataLoader
 from src.solution import Solution
 
 
@@ -26,8 +26,8 @@ def crops_data():
 
 
 @pytest.fixture
-def crops_calendar(crops_data):
-    return CSVCropsCalendarLoader.load(DATA_PATH / "crops_calendar.csv", crops_data)
+def crop_calendar(crops_data):
+    return CSVCropCalendarLoader.load(DATA_PATH / "crop_calendar.csv", crops_data)
 
 
 def test_abstract_constraint():
@@ -35,7 +35,7 @@ def test_abstract_constraint():
         cstrs.Constraint()
 
 
-def test_succession_constraint_solution_checking(crops_calendar):
+def test_succession_constraint_solution_checking(crop_calendar):
     import pandas as pd
     df_return_delays = pd.DataFrame(
         [
@@ -47,19 +47,19 @@ def test_succession_constraint_solution_checking(crops_calendar):
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
 
-    constraint = cstrs2.CategoryCropsRotationConstraint(
-        crops_calendar,
+    constraint = cstrs2.CropTypesRotationConstraint(
+        crop_calendar,
         df_return_delays,
     )
 
     solution1 = Solution(
-        crops_calendar,
+        crop_calendar,
         [0, 1, 2, 3, 4, 0, 1, 2],
     )
     assert constraint.check_solution(solution1)[0]
 
     solution2 = Solution(
-        crops_calendar,
+        crop_calendar,
         [
             0, 1, 2,
             3, 4,
@@ -71,7 +71,7 @@ def test_succession_constraint_solution_checking(crops_calendar):
     assert not constraint.check_solution(solution2)[0]
 
     solution3 = Solution(
-        crops_calendar,
+        crop_calendar,
         [
             0, 1, 2,
             3, 4,

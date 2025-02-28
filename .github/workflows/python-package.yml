@@ -35,9 +35,7 @@ jobs:
         submodules: recursive
     - id: pychoco-pull
       run: |
-        cd pychoco
-        echo "PYCHOCO_LATEST_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-        cd ..
+        echo "PYCHOCO_LATEST_HASH=$(git -C pychoco log HEAD -n 1 --pretty=format:%h)" >> "$GITHUB_ENV"
     - name: Cache pychoco build
       id: cache-pychoco
       uses: actions/cache@v4
@@ -61,10 +59,7 @@ jobs:
       run: sudo apt-get install swig
     - if: ${{ steps.cache-pychoco.outputs.cache-hit != 'true' }}
       name: Build
-      run: |
-        cd pychoco
-        sh build.sh
-        cd ..
+      run: (cd pychoco ; sh build.sh)
     - name: Install latest pychoco version
       run: |
         pip uninstall -y pychoco

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
     from .beds_data import BedsData
     from .constraints.cp_constraints_pychoco import Constraint
-    from .crops_calendar import CropsCalendar
+    from .crop_calendar import CropCalendar
     from .solution import Solution
 
 import numpy as np
@@ -53,14 +53,13 @@ def _get_available_search_strategies() -> dict[str, Callable]:
 #: Dictionnary of search strategies implemented in Pychoco
 available_search_strategies = _get_available_search_strategies()
 
-
 class AgroEcoPlanModel:
     """Global class used to configure and solve the model.
 
     Attributes
     ----------
-    crops_calendar : CropsCalendar
-        `CropsCalendar` used.
+    crop_calendar : CropCalendar
+        `CropCalendar` used.
     beds_data : BedsData
         `BedsData` used.
     n_assignments : int
@@ -76,8 +75,8 @@ class AgroEcoPlanModel:
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
-        `CropsCalendar` object used to define the model.
+    crop_calendar : CropCalendar
+        `CropCalendar` object used to define the model.
     beds_data : BedsData
         `BedsData` object used to define the model.
     verbose : bool, optional
@@ -86,33 +85,40 @@ class AgroEcoPlanModel:
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         beds_data: BedsData,
         verbose: bool = False,
     ):
-        self.crops_calendar = crops_calendar
+        self.crop_calendar = crop_calendar
         self.beds_data = beds_data
-        self.n_assignments = self.crops_calendar.n_assignments
+        self.n_assignments = self.crop_calendar.n_assignments
         self.n_beds = self.beds_data.n_beds
         self.verbose = verbose
 
         self.model = Model()
-        """
-        TODO add fixed domains (pre-allocated beds) + forbidden beds
-        can't we add constraints instead? (less efficient?)
-
-        :meta private:
-        """
-        # TODO update pychoco to avoid doing this here
-        self.assignment_vars = [
+        self.past_crop_plan_vars = []
+        if self.crop_calendar.past_crop_plan:
+            self.past_crop_plan_vars = [
+                self.model.intvar(
+                    list(self.crop_calendar.past_crop_plan.allocated_beds_ids[i]),
+                    None,
+                    "past_{}_{}".format("a", i),
+                )
+                for i in range(self.crop_calendar.past_crop_plan.n_assignments)
+            ]
+        # TODO update pychoco to avoid doing this here (creating a array of variables with same domain)
+        self.future_assignment_vars = [
             self.model.intvar(self.beds_data.beds_ids, None, "{}_{}".format("a", i))
             for i in range(self.n_assignments)
         ]
-        self.assignment_vars = np.asarray(self.assignment_vars)
+        self.assignment_vars = np.asarray(
+            self.past_crop_plan_vars
+            + self.future_assignment_vars
+        )
 
     def __str__(self) -> str:
         return "AgroEcoPlanModel(crop_calendar={}, beds_data={}, verbose={})".format(
-            self.crops_calendar,
+            self.crop_calendar,
             self.beds_data,
             self.verbose,
         )
@@ -196,11 +202,11 @@ class AgroEcoPlanModel:
         if not has_solution:
             raise RuntimeError("No solution found")
         else:
-            variables_values = self._extract_variables_values(self.assignment_vars)
-            return Solution(self.crops_calendar, variables_values)
+            variables_values = self._extract_variables_values(self.future_assignment_vars)
+            return Solution(self.crop_calendar, variables_values)
 
     def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:
-        """Extacts the instantiated values of the variables.
+        """Extracts the instantiated values of the variables.
 
         Parameters
         ----------
@@ -215,8 +221,6 @@ class AgroEcoPlanModel:
         variables_values = [var.get_value() for var in variables]
         # TODO variables = choco_solution.retrieveIntVars()
         return variables_values
-
-
 
     def iterate_over_all_solutions(self) -> Generator[Solution]:
         """Iterator over all solutions.
@@ -233,7 +237,7 @@ class AgroEcoPlanModel:
 
     def _add_non_overlapping_assignments_constraints(self) -> None:
         """Adds non-overlapping assignments constraints as part of the basic model definition."""
-        for overlapping_crops in self.crops_calendar.crops_overlapping_cultivation_intervals:
+        for overlapping_crops in self.crop_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
             self.model.all_different(overlapping_assignment_vars).post()
 
@@ -244,7 +248,7 @@ class AgroEcoPlanModel:
         assignment variables part of the same cropping group.
         """
 
-        for group in self.crops_calendar.crops_groups_assignments:
+        for group in self.crop_calendar.crops_groups_assignments:
             # TODO remove len(group) == 1
             assert len(group) > 0
             group_vars = self.assignment_vars[group]

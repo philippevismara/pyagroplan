@@ -1,7 +1,8 @@
 # description: Small test case
 # data_version: 1
-# format_version: 0.0.2
-bed_id;adjacent_beds_ids
+# format_version: 0.1
+metadata;adjacent_beds
+bed_id;garden_neighbors
 1;2
 2;1,3
 3;2

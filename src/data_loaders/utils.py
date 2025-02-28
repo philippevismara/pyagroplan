@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 import warnings
 
+import pandas as pd
+
 
 def convert_string_to_int_list(s: str) -> tuple[int, ...]:
     """Converts a string containing a list of ints to a proper tuple of ints.
@@ -136,7 +138,9 @@ def dispatch_to_appropriate_loader(filename: str | Sequence[str], scope: object)
             loaded = True
         else:
             warnings.warn(
-                "Specific function for data loading not found, tries using available loaders",
+                f"Specific function for data loading not found, "
+                f"tries using available loaders "
+                f"(filename: {filename}, format version: {format_version})",
                 RuntimeWarning,
             )
 
@@ -154,6 +158,22 @@ def dispatch_to_appropriate_loader(filename: str | Sequence[str], scope: object)
                 pass
 
         if not loaded:
-            raise RuntimeError()
+            raise RuntimeError(
+                f"Can not find a working loader for file "
+                f"(filename: {filename}, format version: {format_version})"
+            )
 
     return data
+
+
+def datetime_to_week_str(dt):
+    return dt.dt.strftime("%G-W%V")
+
+def starting_week_str_to_datetime(s):
+    return pd.to_datetime(s + "-1", format="%G-W%V-%u").dt.date
+
+def ending_week_str_to_datetime(s):
+    return pd.to_datetime(s + "-7", format="%G-W%V-%u").dt.date
+
+def datetime_week(dt):
+    return dt.dt.strftime("%V").astype(int)

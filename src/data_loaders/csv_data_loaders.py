@@ -10,8 +10,9 @@ import pandas as pd
 from .utils import convert_string_to_int_list, dispatch_to_appropriate_loader
 
 from ..beds_data import BedsData
-from ..crops_calendar import CropsCalendar
+from ..crop_calendar import CropCalendar
 from ..crops_data import CropsData
+from ..past_crop_plan import PastCropPlan
 
 N_WEEKS_PER_YEAR = 52
 
@@ -32,40 +33,18 @@ class CSVBedsDataLoader(CSVDataLoader):
     data_cls = BedsData
 
     @staticmethod
-    def _load_v0_0_1(filename: str) -> pd.DataFrame:
-        df_beds_data = pd.read_csv(
+    def _load_v0_1(filename: str) -> pd.DataFrame:
+        df = pd.read_csv(
             filename,
             sep=";",
-            converters={
-                "planche_contact": convert_string_to_int_list,
-            },
-            index_col="planche",
             comment="#",
-        )
-        df_beds_data.index.name = "bed_id"
-        df_beds_data.rename(
-            columns={
-                "planche": "bed_id",
-                "planche_contact": "adjacent_beds_ids",
-                "jardin": "garden_id",
-            },
-            inplace=True,
-        )
-        return df_beds_data
-
-    @staticmethod
-    def _load_v0_0_2(filename: str) -> pd.DataFrame:
-        df_beds_data = pd.read_csv(
-            filename,
-            sep=";",
-            converters={
-                "adjacent_beds_ids": convert_string_to_int_list,
-            },
-            index_col="bed_id",
-            comment="#",
+            header=[0, 1],
         )
 
-        return df_beds_data
+        df.loc[:, ("adjacent_beds", slice(None))] = \
+            df.loc[:, ("adjacent_beds", slice(None))].map(convert_string_to_int_list)
+
+        return df
 
     @classmethod
     def load(cls, filename: str) -> BedsData:
@@ -74,61 +53,51 @@ class CSVBedsDataLoader(CSVDataLoader):
         return beds_data
 
 
-class CSVCropsCalendarLoader(CSVDataLoader):
-    data_cls = CropsCalendar
+class CSVPastCropPlanLoader(CSVDataLoader):
+    data_cls = PastCropPlan
 
     @staticmethod
-    def _load_v0_0_1(filename: str) -> pd.DataFrame:
+    def _load_v0_1(filename: str) -> pd.DataFrame:
         df = pd.read_csv(
             filename,
             sep=";",
-            comment="#",
-        )
-        df_crops_calendar = df[["culture", "debut", "fin", "quantite"]].copy()
-
-        # TODO fix the data instead
-        df_crops_calendar["culture"] = (
-            df_crops_calendar["culture"].str
-            .lower()
-            .replace(" ", "_")
-        )
-
-        df_crops_calendar.rename(
-            columns={
-                "culture": "crop_name",
-                "debut": "starting_week",
-                "fin": "ending_week",
-                "quantite": "allocated_beds_quantity",
+            converters={
+                "allocated_beds_ids": convert_string_to_int_list,
             },
-            inplace=True,
-        )
-
-        return df_crops_calendar
-
-    @staticmethod
-    def _load_v0_0_2(filename: str) -> pd.DataFrame:
-        df = pd.read_csv(
-            filename,
-            sep=";",
             comment="#",
         )
-        """
-        df_crops_calendar = df[[
-            "crop_name",
-            "starting_week",
-            "ending_week",
-            "allocated_beds_quantity"
-        ]]
-        """
-        df_crops_calendar = df
-        return df_crops_calendar
+        return df
 
     @classmethod
     def load(
-        cls, filename: str, crops_data: Optional[CropsData] = None
-    ) -> CropsCalendar:
+        cls, filename: str
+    ) -> PastCropPlan:
+        df = dispatch_to_appropriate_loader(filename, cls)
+        data = cls.data_cls(df)
+        return data
+
+
+class CSVCropCalendarLoader(CSVDataLoader):
+    data_cls = CropCalendar
+
+    @staticmethod
+    def _load_v0_1(filename: str) -> pd.DataFrame:
+        df = pd.read_csv(
+            filename,
+            sep=";",
+            comment="#",
+        )
+        return df
+
+    @classmethod
+    def load(
+        cls,
+        filename: str,
+        crops_data: Optional[CropsData] = None,
+        past_crop_plan: Optional[PastCropPlan] = None,
+    ) -> CropCalendar:
         df_crops_calendar = dispatch_to_appropriate_loader(filename, cls)
-        crops_calendar = cls.data_cls(df_crops_calendar, crops_data)
+        crops_calendar = cls.data_cls(df_crops_calendar, crops_data, past_crop_plan)
         return crops_calendar
 
 

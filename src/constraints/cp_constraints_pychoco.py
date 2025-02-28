@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pychoco.variables.intvar import IntVar
 
     from ..beds_data import BedsData
-    from ..crops_calendar import CropsCalendar
+    from ..crop_calendar import CropCalendar
     from ..model import Model
     from ..solution import Solution
 
@@ -75,7 +75,7 @@ class LocationConstraint(Constraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     beds_data : BedsData
     beds_selection_func : Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]]
         Filtering function taking a single crop data and generating the list of beds the contraint applies on.
@@ -85,14 +85,14 @@ class LocationConstraint(Constraint):
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         beds_data: BedsData,
         beds_selection_func: Callable[
             [pd.Series, BedsData], Sequence[int] | Sequence[bool]
         ],
         forbidden: bool = False,
     ):
-        self.crops_calendar = crops_calendar
+        self.crop_calendar = crop_calendar
         self.beds_data = beds_data
         self.beds_selection_func = beds_selection_func
         self.forbidden = forbidden
@@ -105,7 +105,7 @@ class LocationConstraint(Constraint):
         constraints = []
 
         for crop_var, (_, crop_data) in zip(
-            assignment_vars, self.crops_calendar.df_assignments.iterrows()
+            assignment_vars, self.crop_calendar.df_assignments.iterrows()
         ):
             crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
 
@@ -127,7 +127,7 @@ class LocationConstraint(Constraint):
         on = list(solution.crops_planning.columns.difference(["assignment"]))
         df = pd.merge(
             solution.crops_planning,
-            solution.crops_calendar.df_assignments,
+            solution.crop_calendar.df_assignments,
             on=on,
         )
 
@@ -154,7 +154,7 @@ class SuccessionConstraint(Constraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     temporal_adjacency_graph : nx.Graph
         Graph representing the temporal proximity.
     forbidden : bool
@@ -165,12 +165,12 @@ class SuccessionConstraint(Constraint):
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         temporal_adjacency_graph: nx.Graph,
         forbidden: bool,
         implementation: str = "pairwise",
     ):
-        self.crops_calendar = crops_calendar
+        self.crop_calendar = crop_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
         self.forbidden = forbidden
         self.implementation = implementation
@@ -259,7 +259,7 @@ class SuccessionConstraintWithReinitialisation(Constraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     temporal_adjacency_graph : nx.Graph
         Graph representing the temporal proximity.
     forbidden : bool
@@ -268,21 +268,20 @@ class SuccessionConstraintWithReinitialisation(Constraint):
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         temporal_adjacency_graph: nx.Graph,
         forbidden: bool,
     ):
-        self.crops_calendar = crops_calendar
+        self.crop_calendar = crop_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
         self.forbidden = forbidden
 
-        intervals = crops_calendar.crops_calendar[:, 1:3]
-        starting_weeks = intervals[:, 0]
+        starting_dates = crop_calendar.df_assignments["starting_date"].values
         assert all(
-            starting_weeks[i] <= starting_weeks[i + 1]
-            for i in range(len(starting_weeks) - 1)
+            starting_dates[i] <= starting_dates[i + 1]
+            for i in range(len(starting_dates) - 1)
         )
-        self.starting_weeks = starting_weeks
+        self.starting_dates = starting_dates
 
     def build(
         self,
@@ -333,12 +332,12 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                     continue
 
                 a_i, a_j = assignments.iloc[i], assignments.iloc[j]
-                min_start_week = min(a_i["starting_week"], a_j["starting_week"])
-                max_start_week = max(a_i["starting_week"], a_j["starting_week"])
+                min_start_date = min(a_i["starting_date"], a_j["starting_date"])
+                max_start_date = max(a_i["starting_date"], a_j["starting_date"])
                 if (
                     self.forbidden
                     and (a_i["assignment"] == a_j["assignment"])
-                    and (not any((assignments["starting_week"] > min_start_week) & (assignments["starting_week"] < max_start_week) & (assignments["assignment"] == a_i["assignment"])))
+                    and (not any((assignments["starting_date"] > min_start_date) & (assignments["starting_date"] < max_start_date) & (assignments["assignment"] == a_i["assignment"])))
                 ):
                     violated_constraints.append([a_i, a_j])
                 elif not self.forbidden:
@@ -352,7 +351,7 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     adjacency_graph : nx.Graph
         Graph representing the spatial proximity.
     forbidden : bool
@@ -361,11 +360,11 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
     def __init__(
         self,
-        crops_calendar: CropsCalendar,
+        crop_calendar: CropCalendar,
         adjacency_graph: nx.Graph,
         forbidden: bool,
     ):
-        self.crops_calendar = crops_calendar
+        self.crop_calendar = crop_calendar
         self.adjacency_graph = adjacency_graph
         self.forbidden = forbidden
 
@@ -379,7 +378,7 @@ class BinaryNeighbourhoodConstraint(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for i, j in self.crops_calendar.overlapping_cultures_iter(2):
+        for i, j in self.crop_calendar.overlapping_cultures_iter(2):
             if self.crops_selection_function(i, j):
                 a_i, a_j = assignment_vars[i], assignment_vars[j]
 
@@ -399,7 +398,7 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
         assignments = solution.crops_planning
 
-        for i, j in self.crops_calendar.overlapping_cultures_iter(2):
+        for i, j in self.crop_calendar.overlapping_cultures_iter(2):
             if self.crops_selection_function(i, j):
                 a_i, a_j = assignments.iloc[i], assignments.iloc[j]
 
@@ -417,7 +416,7 @@ class GroupNeighbourhoodConstraint(Constraint):
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropCalendar
     adjacency_graph : nx.Graph
         Graph representing the spatial proximity.
     forbidden : bool

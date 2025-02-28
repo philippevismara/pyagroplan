@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from .crops_calendar import CropsCalendar
+    from .crop_calendar import CropCalendar
 
 import numpy as np
 import pandas as pd
@@ -16,28 +16,28 @@ class Solution:
 
     Attributes
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropsCalendar
         Crops calendar used in the model.
     assignments : Sequence[int]
         Assignments of crops to beds.
 
     Parameters
     ----------
-    crops_calendar : CropsCalendar
+    crop_calendar : CropsCalendar
         Crops calendar used in the model.
     assignments : Sequence[int]
         Assignments of crops to beds.
     """
 
-    def __init__(self, crops_calendar: CropsCalendar, assignments: Sequence[int]):
-        self.crops_calendar = crops_calendar
+    def __init__(self, crop_calendar: CropCalendar, assignments: Sequence[int]):
+        self.crop_calendar = crop_calendar
         self.assignments = assignments
 
         self.crops_planning = pd.DataFrame({
-            "crop_id": self.crops_calendar.df_assignments["crop_id"],
-            "crop_name": self.crops_calendar.df_assignments["crop_name"],
-            "starting_week": self.crops_calendar.df_assignments["starting_week"],
-            "ending_week": self.crops_calendar.df_assignments["ending_week"],
+            "crop_id": self.crop_calendar.df_assignments["crop_id"],
+            "crop_name": self.crop_calendar.df_assignments["crop_name"],
+            "starting_date": self.crop_calendar.df_assignments["starting_date"],
+            "ending_date": self.crop_calendar.df_assignments["ending_date"],
             "assignment": np.asarray(assignments, dtype=int),
         })
         self.crops_planning.sort_index(inplace=True)

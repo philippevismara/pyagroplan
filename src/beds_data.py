@@ -29,12 +29,14 @@ class BedsData:
 
     def __init__(self, df_beds_data: pd.DataFrame):
         self.df_beds_data = df_beds_data.copy()
-        self.beds_ids = np.asarray(df_beds_data.index.array).tolist()
-        self.adjacency_list = self.df_beds_data["adjacent_beds_ids"]
+        self.beds_ids = df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
+        self.adjacency_lists = self.df_beds_data["adjacent_beds"]
 
+        """
         def adjacency_function(i: int, j: int) -> bool:
             return j in self.adjacency_list.loc[i]
         self.adjacency_function = adjacency_function
+        """
 
         self.n_beds = len(self.df_beds_data)
 
@@ -44,20 +46,27 @@ class BedsData:
     def __len__(self) -> int:
         return self.n_beds
 
-    def get_adjacency_graph(self) -> nx.Graph:
+    def get_adjacency_graph(self, adjacency_name: str) -> nx.Graph:
         """Builds the adjacency graph.
+
+        Parameters
+        ----------
+        adjacency_name : string
+            Name of the adjacency graph to build.
 
         Returns
         -------
         nx.Graph
         """
+        adjacency_list = self.adjacency_lists[adjacency_name].values
+        
         edges_list = sum([
             [(i, j) for j in j_list]
-            for i, j_list in self.adjacency_list.items()
+            for i, j_list in zip(self.beds_ids, adjacency_list)
         ], start=[])
 
         beds_adjacency_graph = nx.Graph()
-        beds_adjacency_graph.add_nodes_from(self.adjacency_list.index.values)
+        beds_adjacency_graph.add_nodes_from(self.beds_ids)
         beds_adjacency_graph.add_edges_from(edges_list)
 
         return beds_adjacency_graph

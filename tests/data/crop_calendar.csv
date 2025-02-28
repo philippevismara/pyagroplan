@@ -1,0 +1,9 @@
+# description: Small test case
+# data_version: 1
+# format_version: 0.1
+crop_name;crop_type;starting_date;ending_date;quantity
+carotte;carotte;2020-W01;2020-W05;3
+tomate;tomate;2020-W03;2020-W09;2
+pomme_de_terre;pomme_de_terre;2020-W08;2020-W12;1
+carotte;carotte;2020-W10;2020-W12;1
+pomme_de_terre;pomme_de_terre;2020-W08;2020-W09;1

@@ -1,12 +1,14 @@
 from .csv_data_loaders import (
     CSVBedsDataLoader,
-    CSVCropsCalendarLoader,
+    CSVCropCalendarLoader,
     CSVCropsDataLoader,
+    CSVPastCropPlanLoader,
 )
 
 
 __all__ = [
     "CSVBedsDataLoader",
-    "CSVCropsCalendarLoader",
+    "CSVCropCalendarLoader",
     "CSVCropsDataLoader",
+    "CSVPastCropPlanLoader",
 ]

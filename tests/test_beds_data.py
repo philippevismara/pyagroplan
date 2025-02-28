@@ -17,9 +17,11 @@ def df_beds_data():
             [2, (1, 3)],
             [3, (2,)],
         ],
-        columns=["bed_id", "adjacent_beds_ids"],
+        columns=pd.MultiIndex.from_tuples((
+            ("metadata", "bed_id"),
+            ("adjacent_beds", "garden_neighbors"),
+        )),
     )
-    df_beds_data.set_index("bed_id", inplace=True)
     return df_beds_data
 
 
@@ -33,7 +35,7 @@ def test_beds_data(df_beds_data):
 
     assert len(beds_data) == 3
 
-    adjacency_function = beds_data.adjacency_function
-    assert adjacency_function(1, 2)
-    assert adjacency_function(2, 3)
-    assert not adjacency_function(1, 3)
+    adjacency_graph = beds_data.get_adjacency_graph("garden_neighbors")
+    assert (1, 2) in adjacency_graph.edges
+    assert (2, 3) in adjacency_graph.edges
+    assert (1, 3) not in adjacency_graph.edges
