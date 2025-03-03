@@ -96,6 +96,7 @@ class AgroEcoPlanModel:
         self.verbose = verbose
 
         self.model = Model()
+
         self.past_crop_plan_vars = []
         if self.crop_calendar.past_crop_plan:
             self.past_crop_plan_vars = [
@@ -106,11 +107,13 @@ class AgroEcoPlanModel:
                 )
                 for i in range(self.crop_calendar.past_crop_plan.n_assignments)
             ]
+
         # TODO update pychoco to avoid doing this here (creating a array of variables with same domain)
         self.future_assignment_vars = [
             self.model.intvar(self.beds_data.beds_ids, None, "{}_{}".format("a", i))
-            for i in range(self.n_assignments)
+            for i in range(self.crop_calendar.n_future_assignments)
         ]
+        
         self.assignment_vars = np.asarray(
             self.past_crop_plan_vars
             + self.future_assignment_vars
@@ -202,7 +205,7 @@ class AgroEcoPlanModel:
         if not has_solution:
             raise RuntimeError("No solution found")
         else:
-            variables_values = self._extract_variables_values(self.future_assignment_vars)
+            variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_calendar, variables_values)
 
     def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:

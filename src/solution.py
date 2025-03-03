@@ -30,17 +30,17 @@ class Solution:
     """
 
     def __init__(self, crop_calendar: CropCalendar, assignments: Sequence[int]):
+        crops_planning = crop_calendar.df_assignments[[
+            "crop_id", "crop_name", "starting_date", "ending_date"
+        ]].copy()
+        crops_planning["assignment"] = np.asarray(assignments, dtype=int)
+        crops_planning.sort_index(inplace=True)
+
         self.crop_calendar = crop_calendar
         self.assignments = assignments
-
-        self.crops_planning = pd.DataFrame({
-            "crop_id": self.crop_calendar.df_assignments["crop_id"],
-            "crop_name": self.crop_calendar.df_assignments["crop_name"],
-            "starting_date": self.crop_calendar.df_assignments["starting_date"],
-            "ending_date": self.crop_calendar.df_assignments["ending_date"],
-            "assignment": np.asarray(assignments, dtype=int),
-        })
-        self.crops_planning.sort_index(inplace=True)
+        self.crops_planning = crops_planning
+        self.past_crops_planning = crops_planning.iloc[:-crop_calendar.n_future_assignments]
+        self.future_crops_planning = crops_planning.iloc[-crop_calendar.n_future_assignments:]
 
     def __len__(self) -> int:
         return len(self.crops_planning)

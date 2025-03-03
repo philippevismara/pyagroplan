@@ -18,18 +18,18 @@ from .utils.interval_graph import interval_graph
 def _build_assignments_dataframe(
     df_crop_calendar: pd.DataFrame,
     repeats: np.array,
-) -> tuple[pd.DataFrame, np.array, np.array]:
+    crop_ids: Optional[np.array]=None,
+) -> pd.DataFrame:
     crops_groups = np.repeat(df_crop_calendar.index.values, repeats)
     
     df_assignments = df_crop_calendar.loc[crops_groups]
     df_assignments.reset_index(names="crop_group_id", inplace=True)
+
     df_assignments.reset_index(names="crop_id", inplace=True)
+    if crop_ids is not None:
+        df_assignments["crop_id"] = crop_ids
 
-    crops_groups_assignments = np.split(
-        np.arange(len(df_assignments)), np.cumsum(repeats)[:-1]
-    )
-
-    return df_assignments, crops_groups, crops_groups_assignments
+    return df_assignments
 
 
 class CropCalendar:
@@ -75,36 +75,41 @@ class CropCalendar:
 
         df_crop_calendar = df_future_crop_calendar.copy()
 
-        self.df_crop_calendar = df_crop_calendar.sort_values(
+        df_crop_calendar = df_crop_calendar.sort_values(
             by=["starting_date", "ending_date", "crop_name", "quantity"]
         )
-        self.crops_data = crops_data
 
-        df_assignments, crops_groups, crops_groups_assignments = \
-            _build_assignments_dataframe(
-                self.df_crop_calendar.drop(columns="quantity"),
-                repeats=df_crop_calendar["quantity"].values.astype(int),
-            )
-        future_assignments_index = df_assignments.index
+        df_assignments = _build_assignments_dataframe(
+            df_crop_calendar.drop(columns="quantity"),
+            repeats=df_crop_calendar["quantity"].values.astype(int),
+        )
+        n_future_assignments = len(df_assignments)
 
         if past_crop_plan:
             df_assignments = pd.concat((
                 past_crop_plan.df_past_assignments,
                 df_assignments,
             ))
+            #df_assignments.set_index(df_assignments["crop_id"], inplace=True)
+            df_assignments.reset_index(drop=True, inplace=True)
             
-        if self.crops_data is not None:
+        if crops_data is not None:
             df_assignments = pd.merge(
                 df_assignments,
-                self.crops_data.df_metadata,
+                crops_data.df_metadata,
                 how="left",
                 left_on="crop_name",
                 right_index=True,
             )
 
+        """ TODO remove ???
         df_assignments = df_assignments.sort_values(
             by=["starting_date", "ending_date", "crop_name"],
         )
+        """
+
+        self.df_crop_calendar = df_crop_calendar
+        self.crops_data = crops_data
 
         self.df_future_crop_calendar = df_future_crop_calendar
         self.past_crop_plan = past_crop_plan
@@ -113,18 +118,20 @@ class CropCalendar:
         
         self.df_assignments = df_assignments
         self.n_assignments = len(df_assignments)
-        self.df_future_assignments = df_assignments.loc[future_assignments_index]
+        self.df_future_assignments = df_assignments.iloc[-n_future_assignments:]
+        self.n_future_assignments = n_future_assignments
 
-        self.crops_groups = crops_groups
-        self.crops_groups_assignments = crops_groups_assignments
+        self.crops_groups = df_assignments["crop_group_id"]
+        self.crops_groups_assignments = list(df_assignments.groupby("crop_group_id").indices.values())
         
         self.crop_calendar = df_assignments[["crop_name", "starting_date", "ending_date"]]
         self.crops_names = df_assignments["crop_name"].array
 
         self.cropping_intervals = self.crop_calendar.loc[:, ["starting_date", "ending_date"]]
-        
+
         self._interval_graph = interval_graph(
-            self.cropping_intervals[self.cropping_intervals["ending_date"] >= self.global_starting_date]
+            self.cropping_intervals,
+            node_ids=self.cropping_intervals.index,
         )
         self.crops_overlapping_cultivation_intervals = frozenset(
             nx.chordal_graph_cliques(self._interval_graph)

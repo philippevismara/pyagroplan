@@ -1,0 +1,7 @@
+# description: Data from P&C workshops provided by Margot (files sent by email, 09/01/2025), reworked
+# data_version: 1
+# format_version: 0.1
+crop_name;crop_type;starting_date;ending_date;allocated_beds_ids
+carotte;carotte;2019-W40;2019-W50;1,2,3
+tomate;tomate;2019-W40;2019-W45;4,5
+pomme_de_terre;pomme_de_terre;2019-W46;2020-W02;4,5

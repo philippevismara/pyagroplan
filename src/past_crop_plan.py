@@ -28,17 +28,21 @@ class PastCropPlan:
         df_past_crop_plan.starting_date = starting_week_str_to_datetime(df_past_crop_plan.starting_date)
         df_past_crop_plan.ending_date = ending_week_str_to_datetime(df_past_crop_plan.ending_date)
 
+        df_past_crop_plan.index = -(df_past_crop_plan.index+1)
+
         from .crop_calendar import _build_assignments_dataframe
-        df_past_assignments, crops_groups, crops_groups_assignments = \
-            _build_assignments_dataframe(
-                df_past_crop_plan,
-                repeats=df_past_crop_plan["allocated_beds"].apply(len),
-            )
+        import numpy as np
+        repeats = df_past_crop_plan["allocated_beds_ids"].apply(len)
+        df_past_assignments = _build_assignments_dataframe(
+            df_past_crop_plan,
+            repeats=repeats,
+            crop_ids=-(np.arange(np.sum(repeats))+1),
+        )
 
         # TODO split every allocated beds or not?
-        allocated_beds_ids = df_past_assignments["allocated_beds"]
+        allocated_beds_ids = df_past_assignments["allocated_beds_ids"]
 
-        df_past_assignments.drop(columns="allocated_beds", inplace=True)
+        df_past_assignments.drop(columns="allocated_beds_ids", inplace=True)
         
         self.df_past_crop_plan = df_past_crop_plan
         self.df_past_assignments = df_past_assignments

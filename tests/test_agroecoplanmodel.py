@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 
 from src.model import AgroEcoPlanModel
-from src.data_loaders import CSVBedsDataLoader, CSVCropCalendarLoader
+from src.data_loaders import CSVBedsDataLoader, CSVCropCalendarLoader, CSVPastCropPlanLoader
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -16,8 +16,19 @@ def beds_data(beds_data_csv_filename):
 
 
 @pytest.fixture
-def crop_calendar():
-    return CSVCropCalendarLoader.load(DATA_PATH / "crop_calendar.csv")
+def with_past_crop_plan():
+    return False
+
+@pytest.fixture
+def crop_calendar(with_past_crop_plan):
+    past_crop_plan = None
+    if with_past_crop_plan:
+        past_crop_plan = CSVPastCropPlanLoader.load(DATA_PATH / "past_crop_plan.csv")
+
+    return CSVCropCalendarLoader.load(
+        DATA_PATH / "crop_calendar.csv",
+        past_crop_plan=past_crop_plan,
+    )
 
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data.csv"])
@@ -39,6 +50,11 @@ def test_agroecoplanmodel_no_constraints_with_solution(crop_calendar, beds_data)
     constraints = []
 
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+
+    assert model.n_assignments == (0+8)
+    assert len(model.past_crop_plan_vars) == 0
+    assert len(model.future_assignment_vars) == 8
+    
     model.init(constraints)
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
@@ -51,15 +67,32 @@ def test_agroecoplanmodel_no_constraints_with_solution(crop_calendar, beds_data)
         assert len(np.intersect1d(crops_planning[3:5], crops_planning[5:6])) == 0
         assert len(np.intersect1d(crops_planning[5:6], crops_planning[6:7])) == 0
 
-"""
-def test_agroecoplanmodel(crop_calendar, beds_data):
-    constraints = [
-        cstrs.CropRotationConstraint(),
-        #constraints.DiluteSpeciesConstraint(),
-    ]
+
+@pytest.mark.parametrize("beds_data_csv_filename", ["beds_data_normal.csv"])
+@pytest.mark.parametrize("with_past_crop_plan", [True])
+def test_agroecoplanmodel_with_past_crop_plan_no_constraints_with_solution(crop_calendar, beds_data):
+    constraints = []
 
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+
+    assert model.n_assignments == (7+8)
+    assert len(model.past_crop_plan_vars) == 7
+    assert len(model.future_assignment_vars) == 8
+    
     model.init(constraints)
     model.configure_solver()
-    print(model)
-"""
+    solutions = list(model.iterate_over_all_solutions())
+    
+    assert len(solutions) > 0
+
+    for solution in solutions:
+        # Check that past crops are correctly assigned        
+        past_crop_plan = solution.past_crops_planning["assignment"].values
+        assert np.isin(past_crop_plan[:3], [1, 2 ,3]).all()
+        assert np.isin(past_crop_plan[4:6], [4, 5]).all()
+        assert np.isin(past_crop_plan[6:8], [4, 5]).all()
+
+        crops_planning = solution.future_crops_planning["assignment"].values
+        assert len(np.intersect1d(crops_planning[:3], crops_planning[3:5])) == 0
+        assert len(np.intersect1d(crops_planning[3:5], crops_planning[5:6])) == 0
+        assert len(np.intersect1d(crops_planning[5:6], crops_planning[6:7])) == 0
