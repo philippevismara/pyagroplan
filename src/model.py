@@ -99,15 +99,11 @@ class AgroEcoPlanModel:
 
         self.past_crop_plan_vars = []
         if self.crop_calendar.past_crop_plan:
-            self.past_crop_plan_vars = [
-                self.model.intvar(
-                    list(self.crop_calendar.past_crop_plan.allocated_beds_ids[i]),
-                    None,
-                    "past_{}_{}".format("a", i),
-                )
-                for i in range(self.crop_calendar.past_crop_plan.n_assignments)
-            ]
-
+            self.past_crop_plan_vars = self.model.intvars(
+                self.crop_calendar.past_crop_plan.n_assignments,
+                list(self.crop_calendar.past_crop_plan.allocated_bed_id),
+                name="past_a",
+            )
         # TODO update pychoco to avoid doing this here (creating a array of variables with same domain)
         self.future_assignment_vars = [
             self.model.intvar(self.beds_data.beds_ids, None, "{}_{}".format("a", i))

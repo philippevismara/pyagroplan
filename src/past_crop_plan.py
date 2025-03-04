@@ -39,8 +39,8 @@ class PastCropPlan:
             crop_ids=-(np.arange(np.sum(repeats))+1),
         )
 
-        # TODO split every allocated beds or not?
-        allocated_beds_ids = df_past_assignments["allocated_beds_ids"]
+        gb = df_past_assignments.groupby("crop_group_id")
+        allocated_bed_id = gb["allocated_beds_ids"].transform(lambda s: s.iloc[0])
 
         df_past_assignments.drop(columns="allocated_beds_ids", inplace=True)
         
@@ -49,6 +49,6 @@ class PastCropPlan:
         
         self.past_crop_calendar = df_past_assignments[["crop_name", "starting_date", "ending_date"]]
 
-        self.allocated_beds_ids = allocated_beds_ids
+        self.allocated_bed_id = allocated_bed_id
 
         self.n_assignments = len(df_past_assignments)

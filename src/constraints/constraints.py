@@ -31,17 +31,29 @@ class FamilyCropsRotationConstraint(SuccessionConstraint):
         TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
             and separators should be sufficient, but we should prove it to be sure.
         """
-        self.return_delay = crop_calendar.df_assignments["return_delay"].values
-        self.families = crop_calendar.df_assignments["crop_family"].values
-
-        intervals = crop_calendar.cropping_intervals
         # TODO get return delays with units from the start
         import pandas as pd
-        intervals["ending_date"] += pd.to_timedelta(self.return_delay, unit="W")
+        return_delays = crop_calendar.df_assignments["return_delay"].values
+        return_delays = pd.to_timedelta(return_delays, unit="W")
+
+        families = crop_calendar.df_assignments["crop_family"].values
+
+        intervals = crop_calendar.cropping_intervals.copy()
+        intervals["ending_date"] += return_delays
+        starting_dates = crop_calendar.df_assignments["starting_date"].values
+        global_starting_date = crop_calendar.global_starting_date
+
+        def filter_func(i: int, j: int) -> bool:
+            return (
+                (global_starting_date <= max(starting_dates[i], starting_dates[j]))
+                and (families[i] == families[j])
+            )
+        
         from ..utils.interval_graph import interval_graph
         temporal_adjacency_graph = interval_graph(
             intervals,
-            filter_func=lambda i, j: self.families[i] == self.families[j],
+            filter_func=filter_func,
+            node_ids=list(intervals.index),
         )
 
         super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
@@ -57,31 +69,43 @@ class CropTypesRotationConstraint(SuccessionConstraint):
     """
 
     def __init__(self, crop_calendar: CropCalendar, return_delays: pd.DataFrame):
+        # TODO get return delays with units from the start
+        return_delays = return_delays.map(lambda i: datetime.timedelta(weeks=i))
         self.return_delays = return_delays
 
-        import networkx as nx
-        crop_type_return_delays_graph = nx.from_pandas_adjacency(return_delays, nx.DiGraph)
+        # TODO refactor this
+        def dataframe_to_directed_graph(df: pd.DataFrame) -> nx.DiGraph:
+            import networkx as nx
+            graph = nx.from_pandas_adjacency(df != datetime.timedelta(weeks=0), nx.DiGraph)
+            values = {(u, v): df.loc[u, v] for u, v in graph.edges}
+            nx.set_edge_attributes(
+                graph,
+                values,
+                name="return_delay",
+            )
+            return graph
 
+        crop_type_return_delays_graph = dataframe_to_directed_graph(return_delays)
         intervals = crop_calendar.cropping_intervals
-
-        start = intervals["starting_date"].values
-        crop_type = crop_calendar.df_assignments["crop_type"].values
+        starting_dates = crop_calendar.df_assignments["starting_date"].values
+        global_starting_date = crop_calendar.global_starting_date
+        crop_types = crop_calendar.df_assignments["crop_type"].values
+        
         def filter_func(i: int, j: int) -> bool:
             return (
-                (crop_type[i], crop_type[j]) in crop_type_return_delays_graph.edges
+                (global_starting_date <= max(starting_dates[i], starting_dates[j]))
+                and (crop_types[i], crop_types[j]) in crop_type_return_delays_graph.edges
                 and (
-                    start[i]
-                    + datetime.timedelta(
-                        weeks=crop_type_return_delays_graph.edges[crop_type[i], crop_type[j]]["weight"]
-                    ) >= start[j]
+                    starting_dates[i]
+                    + crop_type_return_delays_graph.edges[crop_types[i], crop_types[j]]["return_delay"]
+                    >= starting_dates[j]
                 )
             )
-
         from ..utils.interval_graph import build_graph
         temporal_adjacency_graph = build_graph(
             intervals,
             filter_func=filter_func,
-            #node_ids=intervals.index,
+            node_ids=list(intervals.index),
         )
 
         super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
@@ -227,7 +251,7 @@ class DiluteSpeciesConstraint(BinaryNeighbourhoodConstraint):
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
         super().__init__(crop_calendar, adjacency_graph, forbidden=True)
-        self.crops_species = crop_calendar.df_future_assignments["crop_name"].array
+        self.crops_species = crop_calendar.df_assignments["crop_name"].array
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops from identical species.
@@ -255,7 +279,7 @@ class DiluteFamilyConstraint(BinaryNeighbourhoodConstraint):
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
         super().__init__(crop_calendar, adjacency_graph, forbidden=True)
-        self.crops_families = crop_calendar.df_future_assignments["crop_family"].array
+        self.crops_families = crop_calendar.df_assignments["crop_family"].array
 
     def crops_selection_function(self, i: int, j: int) -> bool:
         """Selects only pairs of crops from identical family.
@@ -314,5 +338,6 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
         temporal_adjacency_graph = build_graph(
             intervals,
             filter_func=filter_func,
+            node_ids=list(intervals.index),
         )
         super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)

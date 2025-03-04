@@ -128,10 +128,11 @@ class CropCalendar:
         self.crops_names = df_assignments["crop_name"].array
 
         self.cropping_intervals = self.crop_calendar.loc[:, ["starting_date", "ending_date"]]
+        self.future_cropping_intervals = self.cropping_intervals[self.cropping_intervals["ending_date"] >= self.global_starting_date]
 
         self._interval_graph = interval_graph(
-            self.cropping_intervals,
-            node_ids=self.cropping_intervals.index,
+            self.future_cropping_intervals,
+            node_ids=self.future_cropping_intervals.index,
         )
         self.crops_overlapping_cultivation_intervals = frozenset(
             nx.chordal_graph_cliques(self._interval_graph)

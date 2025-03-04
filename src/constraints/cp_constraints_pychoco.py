@@ -102,10 +102,14 @@ class LocationConstraint(Constraint):
         model: Model,
         assignment_vars: Sequence[IntVar],
     ) -> Sequence[ChocoConstraint]:
+        df_future_assignments = self.crop_calendar.df_future_assignments
+        n_future_assignments = self.crop_calendar.n_future_assignments
+        future_assignment_vars = assignment_vars[-n_future_assignments:]
+
         constraints = []
 
         for crop_var, (_, crop_data) in zip(
-            assignment_vars, self.crop_calendar.df_assignments.iterrows()
+            future_assignment_vars, df_future_assignments.iterrows()
         ):
             crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
 
@@ -168,13 +172,14 @@ class SuccessionConstraint(Constraint):
         crop_calendar: CropCalendar,
         temporal_adjacency_graph: nx.Graph,
         forbidden: bool,
-        implementation: str = "pairwise",
+        implementation: str = "cliques",
     ):
         self.crop_calendar = crop_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
         self.forbidden = forbidden
         self.implementation = implementation
 
+        # TODO pairwise version seems to fail with an uncatchable Java exception when no solutions can be found
         build_funcs = {
             "pairwise": self._build_pairwise,
             "cliques": self._build_cliques,

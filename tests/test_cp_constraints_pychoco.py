@@ -40,7 +40,7 @@ def test_succession_constraint_solution_checking(crop_calendar):
     df_return_delays = pd.DataFrame(
         [
             [5, 0, 0],
-            [7, 0, 0],
+            [52, 0, 0],
             [0, 0, 0],
         ],
         index=["carotte", "tomate", "pomme_de_terre"],
@@ -54,7 +54,13 @@ def test_succession_constraint_solution_checking(crop_calendar):
 
     solution1 = Solution(
         crop_calendar,
-        [0, 1, 2, 3, 4, 0, 1, 2],
+        [
+            0, 1, 2,
+            3, 4,
+            0,
+            1,
+            2,
+        ],
     )
     assert constraint.check_solution(solution1)[0]
 
