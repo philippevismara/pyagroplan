@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pandas as pd
 
+from ._typing import FilePath
+
 
 class PastCropPlan:
     """Handles past crop map data.
@@ -19,14 +21,26 @@ class PastCropPlan:
 
     def __init__(
         self,
-        df_past_crop_plan: pd.DataFrame,
+        df_past_crop_plan: pd.DataFrame | FilePath,
     ):
+        from .data_loaders import CSVPastCropPlanLoader
+        if isinstance(df_past_crop_plan, FilePath):
+            df_past_crop_plan = CSVPastCropPlanLoader.load(df_past_crop_plan)
         df_past_crop_plan = df_past_crop_plan.copy()
 
         # TODO refactor and test date format before changing it
-        from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
-        df_past_crop_plan.starting_date = starting_week_str_to_datetime(df_past_crop_plan.starting_date)
-        df_past_crop_plan.ending_date = ending_week_str_to_datetime(df_past_crop_plan.ending_date)
+        from pandas._libs.tslibs.parsing import DateParseError
+        try:
+            df_past_crop_plan.starting_date = pd.to_datetime(
+                df_past_crop_plan.starting_date,
+            ).dt.date
+            df_past_crop_plan.ending_date = pd.to_datetime(
+                df_past_crop_plan.ending_date,
+            ).dt.date
+        except DateParseError:
+            from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
+            df_past_crop_plan.starting_date = starting_week_str_to_datetime(df_past_crop_plan.starting_date)
+            df_past_crop_plan.ending_date = ending_week_str_to_datetime(df_past_crop_plan.ending_date)
 
         df_past_crop_plan.index = -(df_past_crop_plan.index+1)
 

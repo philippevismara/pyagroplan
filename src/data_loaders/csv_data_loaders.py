@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Optional
     from collections.abc import Sequence
+
+    from .._typing import FilePath
 
 import pandas as pd
 
@@ -18,22 +19,17 @@ N_WEEKS_PER_YEAR = 52
 
 
 class CSVDataLoader:
-    """
     @classmethod
-    def load(cls, filenames: str|Sequence[str], **kwargs) -> Any:
-        loaded_data = dispatch_to_appropriate_loader(filenames, cls)
-        data = cls.data_cls(loaded_data, **kwargs)
-        return data
-    """
-
-    ...
+    def load(cls, filename: FilePath) -> pd.DataFrame:
+        df_data = dispatch_to_appropriate_loader(filename, cls)
+        return df_data
 
 
 class CSVBedsDataLoader(CSVDataLoader):
     data_cls = BedsData
 
     @staticmethod
-    def _load_v0_1(filename: str) -> pd.DataFrame:
+    def _load_v0_1(filename: FilePath) -> pd.DataFrame:
         df = pd.read_csv(
             filename,
             sep=";",
@@ -46,18 +42,12 @@ class CSVBedsDataLoader(CSVDataLoader):
 
         return df
 
-    @classmethod
-    def load(cls, filename: str) -> BedsData:
-        df_beds_data = dispatch_to_appropriate_loader(filename, cls)
-        beds_data = cls.data_cls(df_beds_data)
-        return beds_data
-
 
 class CSVPastCropPlanLoader(CSVDataLoader):
     data_cls = PastCropPlan
 
     @staticmethod
-    def _load_v0_1(filename: str) -> pd.DataFrame:
+    def _load_v0_1(filename: FilePath) -> pd.DataFrame:
         df = pd.read_csv(
             filename,
             sep=";",
@@ -68,20 +58,12 @@ class CSVPastCropPlanLoader(CSVDataLoader):
         )
         return df
 
-    @classmethod
-    def load(
-        cls, filename: str
-    ) -> PastCropPlan:
-        df = dispatch_to_appropriate_loader(filename, cls)
-        data = cls.data_cls(df)
-        return data
-
 
 class CSVCropCalendarLoader(CSVDataLoader):
     data_cls = CropCalendar
 
     @staticmethod
-    def _load_v0_1(filename: str) -> pd.DataFrame:
+    def _load_v0_1(filename: FilePath) -> pd.DataFrame:
         df = pd.read_csv(
             filename,
             sep=";",
@@ -89,23 +71,12 @@ class CSVCropCalendarLoader(CSVDataLoader):
         )
         return df
 
-    @classmethod
-    def load(
-        cls,
-        filename: str,
-        crops_data: Optional[CropsData] = None,
-        past_crop_plan: Optional[PastCropPlan] = None,
-    ) -> CropCalendar:
-        df_crops_calendar = dispatch_to_appropriate_loader(filename, cls)
-        crops_calendar = cls.data_cls(df_crops_calendar, crops_data, past_crop_plan)
-        return crops_calendar
-
 
 class CSVCropsDataLoader(CSVDataLoader):
     data_cls = CropsData
 
     @staticmethod
-    def _load_v0_0_1(filenames: Sequence[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _load_v0_0_1(filenames: Sequence[FilePath]) -> tuple[pd.DataFrame, pd.DataFrame]:
         metadata_filename, interactions_filename = filenames
         df_metadata = pd.read_csv(
             metadata_filename,
@@ -141,7 +112,7 @@ class CSVCropsDataLoader(CSVDataLoader):
         return (df_metadata, df_interactions)
 
     @staticmethod
-    def _load_v0_0_2(filenames: Sequence[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _load_v0_0_2(filenames: Sequence[FilePath]) -> tuple[pd.DataFrame, pd.DataFrame]:
         metadata_filename, interactions_filename = filenames
         df_metadata = pd.read_csv(
             metadata_filename,
@@ -162,11 +133,13 @@ class CSVCropsDataLoader(CSVDataLoader):
 
         return (df_metadata, df_interactions)
 
-    @classmethod
-    def load(cls, metadata_filename: str, interactions_filename: str) -> CropsData:
-        df_metadata, df_interactions = dispatch_to_appropriate_loader(
-            (metadata_filename, interactions_filename),
-            cls,
+
+class CSVCropTypesAttributesLoader(CSVDataLoader):
+    @staticmethod
+    def _load_v0_1(filename: FilePath) -> pd.DataFrame:
+        df = pd.read_csv(
+            filename,
+            sep=";",
+            comment="#",
         )
-        crops_data = cls.data_cls(df_metadata, df_interactions)
-        return crops_data
+        return df

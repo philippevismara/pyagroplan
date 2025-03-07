@@ -32,7 +32,7 @@ def df_crop_calendar():
 
 
 def test_crop_calendar_loader(df_crop_calendar):
-    crop_calendar1 = CSVCropCalendarLoader.load(DATA_PATH / "crop_calendar.csv")
+    crop_calendar1 = CropCalendar(DATA_PATH / "crop_calendar.csv")
     crop_calendar2 = CropCalendar(df_crop_calendar)
 
     assert (crop_calendar1.df_crop_calendar == crop_calendar2.df_crop_calendar).all(axis=None)

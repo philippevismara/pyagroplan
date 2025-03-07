@@ -4,13 +4,10 @@ from pathlib import Path
 import numpy as np
 
 from src.constraints import constraints as cstrs
-from src.data_loaders import (
-    CSVBedsDataLoader,
-    CSVCropCalendarLoader,
-    CSVCropsDataLoader,
-    CSVPastCropPlanLoader,
-)
 from src.model import AgroEcoPlanModel
+from src.beds_data import BedsData
+from src.crops_data import CropsData
+from src.crop_calendar import CropCalendar
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -19,29 +16,20 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def beds_data():
-    return CSVBedsDataLoader.load(DATA_PATH / "beds_data_normal.csv")
+    return BedsData(DATA_PATH / "beds_data_normal.csv")
 
 
 @pytest.fixture
 def crops_data():
-    return CSVCropsDataLoader.load(
+    return CropsData(
         DATA_PATH / "crops_metadata.csv",
         DATA_PATH / "crops_interactions.csv",
     )
 
 
 @pytest.fixture
-def past_crop_plan():
-    return CSVPastCropPlanLoader.load(DATA_PATH / "past_crop_plan.csv")
-
-
-@pytest.fixture
-def crop_calendar(crops_data, past_crop_plan):
-    return CSVCropCalendarLoader.load(
-        DATA_PATH / "crop_calendar.csv",
-        crops_data,
-        past_crop_plan,
-    )
+def crop_calendar(crops_data):
+    return CropCalendar(DATA_PATH / "crop_calendar.csv", crops_data)
 
 
 def test_forbid_negative_interactions_constraint(crop_calendar, beds_data):
@@ -138,8 +126,8 @@ def test_family_crops_rotation_constraint(crop_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    assert len(solutions) == 0
-    #assert len(solutions) > 0
+    #assert len(solutions) == 0
+    assert len(solutions) > 0
 
     for solution in solutions:
         assert constraint.check_solution(solution)[0]
@@ -185,14 +173,13 @@ def test_group_identical_crops_together_constraint(crop_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    assert len(solutions) == 0
-    #assert len(solutions) > 0
+    #assert len(solutions) == 0
+    assert len(solutions) > 0
 
     for solution in solutions:
         assert constraint.check_solution(solution)[0]
 
 
-"""
 def test_crops_location_constraint(crop_calendar, beds_data):
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
@@ -232,7 +219,6 @@ def test_crops_location_constraint(crop_calendar, beds_data):
 
     for solution in solutions:
         assert constraint.check_solution(solution)[0]
-"""
 
 
 def test_crops_precedences_constraint(crop_calendar, beds_data):

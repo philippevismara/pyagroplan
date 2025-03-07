@@ -4,6 +4,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+from ._typing import FilePath
+
 
 class BedsData:
     """Handles beds data.
@@ -27,7 +29,10 @@ class BedsData:
         DataFrame containing the raw beds data.
     """
 
-    def __init__(self, df_beds_data: pd.DataFrame):
+    def __init__(self, df_beds_data: pd.DataFrame | FilePath):
+        if isinstance(df_beds_data, FilePath):
+            from .data_loaders import CSVBedsDataLoader
+            df_beds_data = CSVBedsDataLoader.load(df_beds_data)
         self.df_beds_data = df_beds_data.copy()
         self.beds_ids = df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
         self.adjacency_lists = self.df_beds_data["adjacent_beds"]

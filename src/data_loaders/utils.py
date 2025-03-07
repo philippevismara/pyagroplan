@@ -2,12 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any
     from collections.abc import Sequence
+    from typing import Any
 
 import warnings
 
 import pandas as pd
+
+from .._typing import FilePath
 
 
 def convert_string_to_int_list(s: str) -> tuple[int, ...]:
@@ -36,7 +38,7 @@ def convert_string_to_int_list(s: str) -> tuple[int, ...]:
         return tuple(map(int, str_list))
 
 
-def read_csv_metadata(filename: str, prefix_char: str = "#") -> dict[str, str]:
+def read_csv_metadata(filename: FilePath, prefix_char: str = "#") -> dict[str, str]:
     """Reads the metadata header from a CSV file.
 
     Parameters
@@ -55,7 +57,7 @@ def read_csv_metadata(filename: str, prefix_char: str = "#") -> dict[str, str]:
 
     metadata = {}
 
-    with open(filename) as fp:
+    with open(filename, errors="ignore") as fp:
         for row in fp:
             row = row.strip()
             if row[0] != prefix_char:
@@ -73,7 +75,7 @@ def read_csv_metadata(filename: str, prefix_char: str = "#") -> dict[str, str]:
 
 
 def write_csv_metadata(
-    filename: str, metadata: dict[str, str], prefix_char: str = "#"
+    filename: FilePath, metadata: dict[str, str], prefix_char: str = "#"
 ) -> None:
     """Write the metadata header to a CSV file.
 
@@ -95,7 +97,7 @@ def write_csv_metadata(
             )
 
 
-def dispatch_to_appropriate_loader(filename: str | Sequence[str], scope: object) -> Any:
+def dispatch_to_appropriate_loader(filename: FilePath | Sequence[FilePath], scope: object) -> Any:
     """Find the appropriate loader for the given CSV file.
 
     Reads the file format version in the metadata (from the `format_version` key).
@@ -122,10 +124,10 @@ def dispatch_to_appropriate_loader(filename: str | Sequence[str], scope: object)
     RuntimeError
         If no adapted loader can be found.
     """
-    try:
-        csv_metadata = read_csv_metadata(filename)
-    except Exception:
+    if not isinstance(filename, FilePath):
         csv_metadata = read_csv_metadata(filename[0])
+    else:
+        csv_metadata = read_csv_metadata(filename)
 
     loaded = False
 

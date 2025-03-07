@@ -3,7 +3,9 @@ import pytest
 from pathlib import Path
 
 from src.model import AgroEcoPlanModel
-from src.data_loaders import CSVBedsDataLoader, CSVCropCalendarLoader, CSVPastCropPlanLoader
+from src.beds_data import BedsData
+from src.crop_calendar import CropCalendar
+from src.past_crop_plan import PastCropPlan
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -12,7 +14,7 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def beds_data(beds_data_csv_filename):
-    return CSVBedsDataLoader.load(DATA_PATH / beds_data_csv_filename)
+    return BedsData(DATA_PATH / beds_data_csv_filename)
 
 
 @pytest.fixture
@@ -23,9 +25,9 @@ def with_past_crop_plan():
 def crop_calendar(with_past_crop_plan):
     past_crop_plan = None
     if with_past_crop_plan:
-        past_crop_plan = CSVPastCropPlanLoader.load(DATA_PATH / "past_crop_plan.csv")
+        past_crop_plan = PastCropPlan(DATA_PATH / "past_crop_plan.csv")
 
-    return CSVCropCalendarLoader.load(
+    return CropCalendar(
         DATA_PATH / "crop_calendar.csv",
         past_crop_plan=past_crop_plan,
     )

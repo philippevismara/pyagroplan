@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
 import pandas as pd
 
+from ._typing import FilePath
+
 
 class CropsData:
     """Handles crops data.
@@ -31,7 +33,17 @@ class CropsData:
         DataFrame containing the raw interactions matrix.
     """
 
-    def __init__(self, df_crops_metadata: pd.DataFrame, df_crops_interactions: pd.DataFrame):
+    def __init__(
+        self,
+        df_crops_metadata: pd.DataFrame | FilePath,
+        df_crops_interactions: pd.DataFrame | FilePath,
+    ):
+        if isinstance(df_crops_metadata, FilePath):
+            from .data_loaders import CSVCropsDataLoader
+            df_crops_metadata, df_crops_interactions = CSVCropsDataLoader.load((
+                df_crops_metadata,
+                df_crops_interactions,
+            ))
         self.df_metadata = df_crops_metadata.copy()
         self.df_interactions = df_crops_interactions.copy()
 

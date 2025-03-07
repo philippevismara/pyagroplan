@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .utils.interval_graph import interval_graph
+from ._typing import FilePath
 
 
 def _build_assignments_dataframe(
@@ -62,16 +63,29 @@ class CropCalendar:
 
     def __init__(
         self,
-        df_future_crop_calendar: pd.DataFrame,
+        df_future_crop_calendar: pd.DataFrame | FilePath,
         crops_data: Optional[CropsData] = None,
+        df_crop_types_attributes: Optional[pd.DataFrame | FilePath] = None,
         past_crop_plan: Optional[PastCropPlan] = None,
     ):
+        if isinstance(df_future_crop_calendar, FilePath):
+            from .data_loaders import CSVCropCalendarLoader
+            df_future_crop_calendar = CSVCropCalendarLoader.load(df_future_crop_calendar)
         df_future_crop_calendar = df_future_crop_calendar.copy()
 
         # TODO refactor and test date format before changing it
-        from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
-        df_future_crop_calendar.starting_date = starting_week_str_to_datetime(df_future_crop_calendar.starting_date)
-        df_future_crop_calendar.ending_date = ending_week_str_to_datetime(df_future_crop_calendar.ending_date)
+        from pandas._libs.tslibs.parsing import DateParseError
+        try:
+            df_future_crop_calendar.starting_date = pd.to_datetime(
+                df_future_crop_calendar.starting_date,
+            ).dt.date
+            df_future_crop_calendar.ending_date = pd.to_datetime(
+                df_future_crop_calendar.ending_date,
+            ).dt.date
+        except DateParseError:
+            from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
+            df_future_crop_calendar.starting_date = starting_week_str_to_datetime(df_future_crop_calendar.starting_date)
+            df_future_crop_calendar.ending_date = ending_week_str_to_datetime(df_future_crop_calendar.ending_date)
 
         df_crop_calendar = df_future_crop_calendar.copy()
 
@@ -85,7 +99,7 @@ class CropCalendar:
         )
         n_future_assignments = len(df_assignments)
 
-        if past_crop_plan:
+        if past_crop_plan is not None:
             df_assignments = pd.concat((
                 past_crop_plan.df_past_assignments,
                 df_assignments,
@@ -102,6 +116,19 @@ class CropCalendar:
                 right_index=True,
             )
 
+        if df_crop_types_attributes is not None:
+            if isinstance(df_crop_types_attributes, FilePath):
+                from .data_loaders import CSVCropTypesAttributesLoader
+                df_crop_types_attributes = \
+                    CSVCropTypesAttributesLoader.load(df_crop_types_attributes)
+
+            df_assignments = pd.merge(
+                df_assignments,
+                df_crop_types_attributes,
+                how="left",
+                on="crop_type",
+            )
+
         """ TODO remove ???
         df_assignments = df_assignments.sort_values(
             by=["starting_date", "ending_date", "crop_name"],
@@ -110,6 +137,7 @@ class CropCalendar:
 
         self.df_crop_calendar = df_crop_calendar
         self.crops_data = crops_data
+        self.df_crop_types_attributes = df_crop_types_attributes
 
         self.df_future_crop_calendar = df_future_crop_calendar
         self.past_crop_plan = past_crop_plan
