@@ -13,6 +13,8 @@ from collections.abc import Iterable, Sized
 import networkx as nx
 import pandas as pd
 
+from ..exceptions import IntervalError
+
 __all__ = ["interval_graph"]
 
 
@@ -29,13 +31,13 @@ def get_intervals_as_list_of_intervals(
             and isinstance(interval, Sized)
             and len(interval) == 2
         ):
-            raise TypeError(
+            raise IntervalError(
                 "Each interval must have length 2, and be a iterable such as tuple or list."
             )
 
         interval = tuple(interval)
         if interval[0] > interval[1]:
-            raise ValueError(f"Interval must have lower value first. Got {interval}")
+            raise IntervalError(f"Interval must have lower value first. Got {interval}")
 
     intervals = list(map(tuple, intervals))
 

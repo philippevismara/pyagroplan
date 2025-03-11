@@ -124,11 +124,21 @@ class CropCalendar:
                 df_crop_types_attributes = \
                     CSVCropTypesAttributesLoader.load(df_crop_types_attributes)
 
+            intersection = np.setdiff1d(
+                df_assignments["crop_type"].values,
+                df_crop_types_attributes["crop_type"].values,
+            )
+            if len(intersection):
+                raise RuntimeError(
+                    f"missing some crop types in df_crop_type_attributes: {intersection}"
+                )
+
             df_assignments = pd.merge(
                 df_assignments,
                 df_crop_types_attributes,
                 how="left",
                 on="crop_type",
+                validate="many_to_one",
             )
 
         """ TODO remove ???

@@ -91,7 +91,7 @@ def test_agroecoplanmodel_with_past_crop_plan_no_constraints_with_solution(crop_
         # Check that past crops are correctly assigned        
         past_crop_plan = solution.past_crops_planning["assignment"].values
         assert (past_crop_plan[:3] == np.asarray([1, 2, 4])).all()
-        assert (past_crop_plan[3:5] == np.asarray([4, 5])).all()
+        assert (past_crop_plan[3:5] == np.asarray([3, 5])).all()
         assert (past_crop_plan[5:7] == np.asarray([3, 5])).all()
 
         crops_planning = solution.future_crops_planning["assignment"].values

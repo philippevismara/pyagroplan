@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 from ._typing import FilePath
@@ -68,3 +69,28 @@ class PastCropPlan:
         self.allocated_bed_id = allocated_bed_id
 
         self.n_assignments = len(df_past_assignments)
+
+        self._check_consistency()
+
+
+    def _check_consistency(self) -> None:
+        cropping_intervals = self.df_past_assignments.loc[:, ["starting_date", "ending_date"]]
+        from .utils.interval_graph import get_intervals_as_list_of_intervals
+        get_intervals_as_list_of_intervals(cropping_intervals)
+
+        assignments = self.allocated_bed_id
+
+        issues = []
+        bed_ids = np.unique(assignments)
+        for bed_id in bed_ids:
+            ind = np.where(assignments == bed_id)[0]
+            data = self.df_past_assignments.loc[ind]
+            data.sort_values(by=["starting_date", "ending_date"], inplace=True)
+            for i in range(len(data)-1):
+                if data.iloc[i].loc["ending_date"] >= data.iloc[i+1].loc["starting_date"]:
+                    issue = data.iloc[i:i+2].loc[:, ["crop_name", "starting_date", "ending_date"]]
+                    issue["allocated_bed_id"] = bed_id
+                    issues.append(issue)
+
+        if issues:
+            raise ValueError(f"Inconsistent past crop plan, inconsistencies: {issues}")
