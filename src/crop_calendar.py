@@ -74,11 +74,9 @@ class CropCalendar:
         try:
             df_future_crop_calendar.starting_date = pd.to_datetime(
                 df_future_crop_calendar.starting_date,
-                dayfirst=True,
             ).dt.date
             df_future_crop_calendar.ending_date = pd.to_datetime(
                 df_future_crop_calendar.ending_date,
-                dayfirst=True,
             ).dt.date
         except DateParseError:
             from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime

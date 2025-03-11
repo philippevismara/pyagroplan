@@ -35,16 +35,10 @@ def crop_calendar(with_past_crop_plan):
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data.csv"])
 def test_agroecoplanmodel_no_constraints_no_solution(crop_calendar, beds_data):
-    constraints = []
+    with pytest.raises(ValueError) as excinfo:
+        AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
-    model.init(constraints)
-    model.configure_solver()
-
-    with pytest.raises(RuntimeError) as excinfo:
-        model.solve()
-
-    assert "No solution found" in str(excinfo.value)
+    assert "not enough beds available" in str(excinfo.value)
 
 
 @pytest.mark.parametrize("beds_data_csv_filename", ["beds_data_normal.csv"])

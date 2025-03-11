@@ -89,6 +89,8 @@ class AgroEcoPlanModel:
         beds_data: BedsData,
         verbose: bool = False,
     ):
+        self._check_enough_beds_for_crop_calendar(crop_calendar, beds_data)
+
         self.crop_calendar = crop_calendar
         self.beds_data = beds_data
         self.n_assignments = self.crop_calendar.n_assignments
@@ -203,6 +205,20 @@ class AgroEcoPlanModel:
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_calendar, variables_values)
+
+    def _check_enough_beds_for_crop_calendar(
+        self,
+        crop_calendar: CropCalendar,
+        beds_data: BedsData,
+    ) -> None:
+        n_beds_min = max(map(len, crop_calendar.crops_overlapping_cultivation_intervals))
+        n_available_beds = len(beds_data)
+
+        if n_available_beds < n_beds_min:
+            raise ValueError(
+                f"Inconsistency: not enough beds available "
+                f"({n_available_beds} beds available, {n_beds_min} needed)"
+            )
 
     def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:
         """Extracts the instantiated values of the variables.

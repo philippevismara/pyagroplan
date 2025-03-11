@@ -34,11 +34,9 @@ class PastCropPlan:
         try:
             df_past_crop_plan.starting_date = pd.to_datetime(
                 df_past_crop_plan.starting_date,
-                dayfirst=True,
             ).dt.date
             df_past_crop_plan.ending_date = pd.to_datetime(
                 df_past_crop_plan.ending_date,
-                dayfirst=True,
             ).dt.date
         except DateParseError:
             from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
@@ -93,4 +91,7 @@ class PastCropPlan:
                     issues.append(issue)
 
         if issues:
-            raise ValueError(f"Inconsistent past crop plan, inconsistencies: {issues}")
+            raise ValueError(
+                "Inconsistent past crop plan, inconsistencies: \n"
+                + "\n".join(map(repr, issues))
+            )
