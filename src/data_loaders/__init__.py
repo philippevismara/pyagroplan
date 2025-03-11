@@ -1,7 +1,6 @@
 from .csv_data_loaders import (
     CSVBedsDataLoader,
     CSVCropCalendarLoader,
-    CSVCropsDataLoader,
     CSVCropTypesAttributesLoader,
     CSVPastCropPlanLoader,
 )
@@ -10,7 +9,6 @@ from .csv_data_loaders import (
 __all__ = [
     "CSVBedsDataLoader",
     "CSVCropCalendarLoader",
-    "CSVCropsDataLoader",
     "CSVCropTypesAttributesLoader",
     "CSVPastCropPlanLoader",
 ]

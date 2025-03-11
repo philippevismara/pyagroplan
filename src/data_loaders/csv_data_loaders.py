@@ -2,8 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from .._typing import FilePath
 
 import pandas as pd
@@ -12,7 +10,6 @@ from .utils import convert_string_to_int_list, dispatch_to_appropriate_loader
 
 from ..beds_data import BedsData
 from ..crop_calendar import CropCalendar
-from ..crops_data import CropsData
 from ..past_crop_plan import PastCropPlan
 
 N_WEEKS_PER_YEAR = 52
@@ -70,68 +67,6 @@ class CSVCropCalendarLoader(CSVDataLoader):
             comment="#",
         )
         return df
-
-
-class CSVCropsDataLoader(CSVDataLoader):
-    data_cls = CropsData
-
-    @staticmethod
-    def _load_v0_0_1(filenames: Sequence[FilePath]) -> tuple[pd.DataFrame, pd.DataFrame]:
-        metadata_filename, interactions_filename = filenames
-        df_metadata = pd.read_csv(
-            metadata_filename,
-            sep=";",
-            index_col="culture",
-            comment="#",
-        )
-        df_metadata.rename(
-            columns={
-                "culture": "crop_name",
-                "famille": "crop_family",
-                "delai_retour": "return_delay",
-            },
-            inplace=True,
-        )
-
-        # TODO fix the data instead
-        df_metadata["return_delay"] = df_metadata["return_delay"] * N_WEEKS_PER_YEAR
-
-        df_interactions = pd.read_csv(
-            interactions_filename,
-            sep=";",
-            index_col="culture",
-            comment="#",
-        )
-        df_interactions.rename(
-            columns={
-                "culture": "crop_name",
-            },
-            inplace=True,
-        )
-
-        return (df_metadata, df_interactions)
-
-    @staticmethod
-    def _load_v0_0_2(filenames: Sequence[FilePath]) -> tuple[pd.DataFrame, pd.DataFrame]:
-        metadata_filename, interactions_filename = filenames
-        df_metadata = pd.read_csv(
-            metadata_filename,
-            sep=";",
-            index_col="crop_name",
-            comment="#",
-        )
-
-        # TODO fix the data instead
-        df_metadata["return_delay"] = df_metadata["return_delay"] * N_WEEKS_PER_YEAR
-
-        df_interactions = pd.read_csv(
-            interactions_filename,
-            sep=";",
-            index_col=0,
-            comment="#",
-        )
-
-        return (df_metadata, df_interactions)
 
 
 class CSVCropTypesAttributesLoader(CSVDataLoader):

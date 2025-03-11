@@ -1,7 +1,7 @@
 # description: Small test case
 # data_version: 1
-# format_version: 0.0.2
-crop_name;crop_family;return_delay;exigeante;salissante;prof_enracinement;besoin_lumiere;exigence_de_soins;surveillance;aspersion;besoins_goute_a_goute
+# format_version: 0.1
+crop_type;crop_family;return_delay;exigeante;salissante;prof_enracinement;besoin_lumiere;exigence_de_soins;surveillance;aspersion;besoins_goute_a_goute
 carotte;apiacees;2;non;oui;3;mi-ombre;oui;oui;oui;3
 pomme_de_terre;solanacees;4;oui;non;2;mi-ombre;;;non;1
 tomate;solanacees;4;oui;non;3;soleil;oui;;;2

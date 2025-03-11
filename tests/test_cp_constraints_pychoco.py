@@ -4,7 +4,6 @@ from pathlib import Path
 from src.constraints import cp_constraints_pychoco as cstrs
 from src.constraints import constraints as cstrs2
 from src.beds_data import BedsData
-from src.crops_data import CropsData
 from src.crop_calendar import CropCalendar
 from src.solution import Solution
 
@@ -20,16 +19,11 @@ def beds_data():
 
 
 @pytest.fixture
-def crops_data():
-    return CropsData(
-        DATA_PATH / "crops_metadata.csv",
-        DATA_PATH / "crops_interactions.csv",
+def crop_calendar():
+    return CropCalendar(
+        DATA_PATH / "crop_calendar.csv",
+        df_crop_types_attributes=DATA_PATH / "crop_types_attributes.csv",
     )
-
-
-@pytest.fixture
-def crop_calendar(crops_data):
-    return CropCalendar(DATA_PATH / "crop_calendar.csv", crops_data)
 
 
 def test_abstract_constraint():

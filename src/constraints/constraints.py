@@ -124,23 +124,29 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
     def __init__(
         self,
         crop_calendar: CropCalendar,
+        df_crops_interactions_matrix: pd.DataFrame,
         beds_data: BedsData,
         adjacency_name: str,
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
         super().__init__(crop_calendar, adjacency_graph, forbidden=True)
 
-        if not crop_calendar.crops_data:
-            raise ValueError("No crops interaction data can be found")
-        self.crops_interactions = crop_calendar.crops_data.crops_interactions
-        self.crops_names = crop_calendar.crops_names
+        self.df_crops_interactions_matrix = df_crops_interactions_matrix
+        categorisation_name = self.df_crops_interactions_matrix.index.name
+        if categorisation_name:
+            self.categorisation = crop_calendar.df_assignments[categorisation_name].values
+        else:
+            self.categorisation = crop_calendar.df_assignments.index.values
 
-    def crops_selection_function(self, i: int, j: int) -> bool:
+    def crops_selection_function(self, need_i: int, need_j: int) -> bool:
         """Selects only pairs of crops with negative interactions.
 
         :meta private:
         """
-        return self.crops_interactions(self.crops_names[i], self.crops_names[j]) < 0  # type: ignore[no-any-return]
+        return self.df_crops_interactions_matrix.loc[
+            self.categorisation[need_i],
+            self.categorisation[need_j]
+        ] < 0  # type: ignore[no-any-return]
 
 
 class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
@@ -156,15 +162,19 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
     def __init__(
         self,
         crop_calendar: CropCalendar,
-        crops_interaction_matrix,
+        df_crops_interactions_matrix: pd.DataFrame,
         beds_data: BedsData,
         adjacency_name: str,
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
         super().__init__(crop_calendar, adjacency_graph, forbidden=True)
 
-        self.crops_interaction_matrix = crops_interaction_matrix
-        self.crop_types = crop_calendar.df_assignments["crop_type"].array
+        self.df_crops_interactions_matrix = df_crops_interactions_matrix
+        categorisation_name = self.df_crops_interactions_matrix.index.name
+        if categorisation_name:
+            self.categorisation = crop_calendar.df_assignments[categorisation_name].values
+        else:
+            self.categorisation = crop_calendar.df_assignments.index.values
 
         import re
 
@@ -179,8 +189,9 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
 
         :meta private:
         """
-        interaction_str = self.crops_interaction_matrix.loc[
-            self.crop_types[i], self.crop_types[j]
+        interaction_str = self.df_crops_interactions_matrix.loc[
+            self.categorisation[i],
+            self.categorisation[j]
         ]
 
         import numpy as np

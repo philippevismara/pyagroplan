@@ -2,11 +2,11 @@ import pytest
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from src.constraints import constraints as cstrs
 from src.model import AgroEcoPlanModel
 from src.beds_data import BedsData
-from src.crops_data import CropsData
 from src.crop_calendar import CropCalendar
 
 
@@ -20,23 +20,26 @@ def beds_data():
 
 
 @pytest.fixture
-def crops_data():
-    return CropsData(
-        DATA_PATH / "crops_metadata.csv",
-        DATA_PATH / "crops_interactions.csv",
+def crop_calendar():
+    return CropCalendar(
+        DATA_PATH / "crop_calendar.csv",
+        df_crop_types_attributes=DATA_PATH / "crop_types_attributes.csv",
     )
 
 
-@pytest.fixture
-def crop_calendar(crops_data):
-    return CropCalendar(DATA_PATH / "crop_calendar.csv", crops_data)
-
-
 def test_forbid_negative_interactions_constraint(crop_calendar, beds_data):
+    df_spatial_interactions_matrix = pd.read_csv(
+        DATA_PATH / "spatial_interactions_matrix.csv",
+        sep=";",
+        comment="#",
+        index_col=0,
+    )
+
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
     constraint = cstrs.ForbidNegativeInteractionsConstraint(
         crop_calendar,
+        df_spatial_interactions_matrix,
         beds_data,
         adjacency_name="garden_neighbors",
     )
@@ -53,8 +56,7 @@ def test_forbid_negative_interactions_constraint(crop_calendar, beds_data):
 def test_forbid_negative_interactions_subintervals_constraint(crop_calendar, beds_data):
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
-    import pandas as pd
-    crop_calendar.crops_data.df_interactions = pd.DataFrame(
+    df_spatial_interactions_matrix = pd.DataFrame(
         [
             ["", "+[1,-1][1,-1]", "+[1,-1][1,-1]"],
             ["+[1,-1][1,-1]", "", "-[1,-1][-2,-1]"],
@@ -63,10 +65,11 @@ def test_forbid_negative_interactions_subintervals_constraint(crop_calendar, bed
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
+    df_spatial_interactions_matrix.index.name = "crop_type"
 
     constraint = cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
         crop_calendar,
-        crop_calendar.crops_data.df_interactions,
+        df_spatial_interactions_matrix,
         beds_data,
         adjacency_name="garden_neighbors",
     )

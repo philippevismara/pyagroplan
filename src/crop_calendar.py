@@ -5,7 +5,6 @@ if TYPE_CHECKING:
     from typing import Optional
     from collections.abc import Sequence
 
-    from .crops_data import CropsData
     from .past_crop_plan import PastCropPlan
 
 import networkx as nx
@@ -18,8 +17,8 @@ from ._typing import FilePath
 
 def _build_assignments_dataframe(
     df_crop_calendar: pd.DataFrame,
-    repeats: np.array,
-    crop_ids: Optional[np.array]=None,
+    repeats: np.ndarray,
+    crop_ids: Optional[np.ndarray]=None,
 ) -> pd.DataFrame:
     crops_groups = np.repeat(df_crop_calendar.index.values, repeats)
     
@@ -57,14 +56,11 @@ class CropCalendar:
     ----------
     df_future_crop_calendar : pd.DataFrame
         DataFrame containing the raw crops calendar.
-    crops_data : CropsData, optional
-        Crops metadata object.
     """
 
     def __init__(
         self,
         df_future_crop_calendar: pd.DataFrame | FilePath,
-        crops_data: Optional[CropsData] = None,
         df_crop_types_attributes: Optional[pd.DataFrame | FilePath] = None,
         past_crop_plan: Optional[PastCropPlan] = None,
     ):
@@ -109,15 +105,6 @@ class CropCalendar:
             #df_assignments.set_index(df_assignments["crop_id"], inplace=True)
             df_assignments.reset_index(drop=True, inplace=True)
             
-        if crops_data is not None:
-            df_assignments = pd.merge(
-                df_assignments,
-                crops_data.df_metadata,
-                how="left",
-                left_on="crop_name",
-                right_index=True,
-            )
-
         if df_crop_types_attributes is not None:
             if isinstance(df_crop_types_attributes, FilePath):
                 from .data_loaders import CSVCropTypesAttributesLoader
@@ -148,7 +135,6 @@ class CropCalendar:
         """
 
         self.df_crop_calendar = df_crop_calendar
-        self.crops_data = crops_data
         self.df_crop_types_attributes = df_crop_types_attributes
 
         self.df_future_crop_calendar = df_future_crop_calendar
