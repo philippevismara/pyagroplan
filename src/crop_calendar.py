@@ -86,7 +86,7 @@ class CropCalendar:
         df_crop_calendar = df_future_crop_calendar.copy()
 
         df_crop_calendar = df_crop_calendar.sort_values(
-            by=["starting_date", "ending_date", "crop_name", "quantity"]
+            by=["starting_date", "ending_date", "crop_name", "quantity"],
         )
 
         df_assignments = _build_assignments_dataframe(
@@ -96,13 +96,18 @@ class CropCalendar:
         n_future_assignments = len(df_assignments)
 
         if past_crop_plan is not None:
+            df_crop_calendar = pd.concat((
+                past_crop_plan.df_past_crop_calendar,
+                df_crop_calendar,
+            ))
+            df_crop_calendar.reset_index(drop=True, inplace=True)
+
             df_assignments = pd.concat((
                 past_crop_plan.df_past_assignments,
                 df_assignments,
             ))
-            #df_assignments.set_index(df_assignments["crop_id"], inplace=True)
             df_assignments.reset_index(drop=True, inplace=True)
-            
+
         if df_crop_types_attributes is not None:
             if isinstance(df_crop_types_attributes, FilePath):
                 from .data_loaders import CSVCropTypesAttributesLoader
@@ -118,6 +123,13 @@ class CropCalendar:
                     f"missing some crop types in df_crop_type_attributes: {intersection}"
                 )
 
+            df_crop_calendar = pd.merge(
+                df_crop_calendar,
+                df_crop_types_attributes,
+                how="left",
+                on="crop_type",
+                validate="many_to_one",
+            )
             df_assignments = pd.merge(
                 df_assignments,
                 df_crop_types_attributes,
@@ -125,12 +137,6 @@ class CropCalendar:
                 on="crop_type",
                 validate="many_to_one",
             )
-
-        """ TODO remove ???
-        df_assignments = df_assignments.sort_values(
-            by=["starting_date", "ending_date", "crop_name"],
-        )
-        """
 
         self.df_crop_calendar = df_crop_calendar
         self.df_crop_types_attributes = df_crop_types_attributes

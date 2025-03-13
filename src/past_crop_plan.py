@@ -53,6 +53,9 @@ class PastCropPlan:
             repeats=repeats,
             crop_ids=-(np.arange(np.sum(repeats))+1),
         )
+        df_past_crop_calendar = df_past_crop_plan.copy()
+        df_past_crop_calendar.drop(columns="allocated_beds_ids", inplace=True)
+        df_past_crop_calendar["quantity"] = repeats
 
         gb = df_past_assignments.groupby("crop_group_id")
         allocated_bed_id = gb["allocated_beds_ids"].transform(lambda s: s.iloc[0])
@@ -63,6 +66,7 @@ class PastCropPlan:
         self.df_past_assignments = df_past_assignments
         
         self.past_crop_calendar = df_past_assignments[["crop_name", "starting_date", "ending_date"]]
+        self.df_past_crop_calendar = df_past_crop_calendar
 
         self.allocated_bed_id = allocated_bed_id
 
@@ -83,7 +87,10 @@ class PastCropPlan:
         for bed_id in bed_ids:
             ind = np.where(assignments == bed_id)[0]
             data = self.df_past_assignments.loc[ind]
-            data.sort_values(by=["starting_date", "ending_date"], inplace=True)
+            data.sort_values(
+                by=["starting_date", "ending_date"],
+                inplace=True,
+            )
             for i in range(len(data)-1):
                 if data.iloc[i].loc["ending_date"] >= data.iloc[i+1].loc["starting_date"]:
                     issue = data.iloc[i:i+2].loc[:, ["crop_name", "starting_date", "ending_date"]]

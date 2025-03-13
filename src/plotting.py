@@ -6,10 +6,11 @@ if TYPE_CHECKING:
     from typing import Any, Optional
 
     from .beds_data import BedsData
-    from .crops_calendar import CropsCalendar
+    from .crop_calendar import CropCalendar
     from .crops_data import CropsData
     from .solution import Solution
 
+import datetime
 from itertools import cycle
 
 import networkx as nx
@@ -20,14 +21,14 @@ from matplotlib import pyplot as plt
 
 
 def get_crops_colors_by_crop_family(
-    crops_calendar: CropsCalendar,
+    crop_calendar: CropCalendar,
     colors_list: Optional[Collection] = None,
 ) -> dict[str, Any]:
     if colors_list is None:
         from matplotlib import colormaps
         colors_list = colormaps["tab20"].colors
 
-    families_names = crops_calendar.df_crops_calendar["crop_family"].unique()
+    families_names = crop_calendar.df_crop_calendar["crop_family"].unique()
     families_names.sort()
 
     fam_colors = {
@@ -35,7 +36,7 @@ def get_crops_colors_by_crop_family(
         for family_name, color in zip(families_names, cycle(colors_list))
     }
 
-    crops_data = crops_calendar.df_crops_calendar.drop_duplicates(
+    crops_data = crop_calendar.df_crop_calendar.drop_duplicates(
         subset=["crop_name", "crop_family"]
     )
 
@@ -47,8 +48,8 @@ def get_crops_colors_by_crop_family(
     return crops_colors
 
 
-def plot_crops_calendar(
-    crops_calendar: CropsCalendar,
+def plot_crop_calendar(
+    crop_calendar: CropCalendar,
     ax: Optional[plt.Axes] = None,
     colors: Optional[dict | str] = "auto",
 ) -> plt.Axes:
@@ -58,21 +59,22 @@ def plot_crops_calendar(
 
     colors = colors or {}
     if colors == "auto":
-        colors = get_crops_colors_by_crop_family(crops_calendar)
+        colors = get_crops_colors_by_crop_family(crop_calendar)
 
-    df_crops_calendar = crops_calendar.df_crops_calendar[
-        ["crop_name", "starting_week", "ending_week", "allocated_beds_quantity"]
+    df_crop_calendar = crop_calendar.df_crop_calendar[
+        ["crop_name", "starting_date", "ending_date", "quantity"]
     ]
-    first_week = df_crops_calendar["starting_week"].min()
-    n_weeks = df_crops_calendar["ending_week"].max()
-    n_crops_total = df_crops_calendar["allocated_beds_quantity"].sum()
+    first_date = df_crop_calendar["starting_date"].min()
+    last_date = df_crop_calendar["ending_date"].max()
+    n_days = last_date - first_date
+    n_crops_total = df_crop_calendar["quantity"].sum()
 
     offset = 0.0
-    for i, vals in df_crops_calendar.iterrows():
+    for i, vals in df_crop_calendar.iterrows():
         p = patches.Rectangle(
-            (vals["starting_week"], offset),
-            width=vals["ending_week"] - vals["starting_week"],
-            height=vals["allocated_beds_quantity"],
+            (vals["starting_date"], offset),
+            width=vals["ending_date"] - vals["starting_date"],
+            height=vals["quantity"],
             color=colors.get(vals["crop_name"], None),
             antialiased=False,
             linewidth=0,
@@ -87,24 +89,28 @@ def plot_crops_calendar(
             verticalalignment="center",
         )
 
-    ax.set_xticks(range(n_weeks + 1), minor=True)
-    ax.set_xticks(range(0, n_weeks + 1, 5), minor=False)
+    years_list = list(range(first_date.year, last_date.year+1))
+    ax.set_xticks(
+        [datetime.date(year, 1, 1) for year in years_list],
+        labels=years_list,
+        minor=False,
+    )
+    year, week, _ = first_date.isocalendar()
+    first_week = datetime.date.fromisocalendar(year, week, 1)
+    year, week, _ = last_date.isocalendar()
+    last_week = datetime.date.fromisocalendar(year, week, 7)
+    weeks_list = np.arange(first_week, last_week, 7)
+    ax.set_xticks(
+        weeks_list,
+        minor=True,
+    )
 
-    ax.set_xlim(first_week, n_weeks)
+    ax.set_xlim(first_date, last_date)
     ax.set_ylim(0, n_crops_total)
     ax.invert_yaxis()
 
-    for label in ax.get_xticklabels()[1:]:
-        x, y = label.get_position()
-        ax.text(x + 0.5, n_crops_total + 0.05, label.get_text(), ha="center", va="top")
-    ax.set_xticklabels([])
-
-    for label in ax.get_yticklabels()[:n_crops_total]:
-        x, y = label.get_position()
-        ax.text(0.9, y + 0.5, label.get_text(), ha="right", va="center")
-    ax.set_yticklabels([])
-
-    ax.grid(axis="x", which="both", ls="--")
+    ax.grid(axis="x", which="major", ls="-", color="black")
+    ax.grid(axis="x", which="minor", ls="--")
 
     return ax
 
@@ -182,23 +188,24 @@ def plot_solution(
 
     colors = colors if colors is not None else defaultdict()
     if colors == "auto":
-        colors = get_crops_colors_by_crop_family(solution.crops_calendar)
+        colors = get_crops_colors_by_crop_family(solution.crop_calendar)
 
-    beds_adjacency_graph = beds_data.get_adjacency_graph()
+    import networkx as nx
+    beds_adjacency_graph = beds_data.get_adjacency_graph("garden_neighbors")
     plots_data = [
         (list(cc)[0], len(cc)) for cc in nx.connected_components(beds_adjacency_graph)
     ]
     plots, sizes = list(zip(*plots_data))
 
     df_solution = solution.crops_planning
-    first_week = df_solution["starting_week"].min()
-    n_weeks = df_solution["ending_week"].max()
+    first_date = df_solution["starting_date"].min()
+    last_date = df_solution["ending_date"].max()
     n_beds = sum(sizes)
 
     for i, vals in df_solution.iterrows():
         p = patches.Rectangle(
-            (vals["starting_week"], vals["assignment"]),
-            width=vals["ending_week"] - vals["starting_week"],
+            (vals["starting_date"], vals["assignment"]),
+            width=vals["ending_date"] - vals["starting_date"],
             height=1,
             color=colors[vals["crop_name"]],
             antialiased=False,
@@ -213,25 +220,35 @@ def plot_solution(
             verticalalignment="center",
         )
 
-    ax.hlines(y=np.cumsum(sizes)[:-1] + 1, xmin=0, xmax=n_weeks, lw=3)
+    ax.hlines(
+        y=np.cumsum(sizes)[:-1] + 1,
+        xmin=first_date,
+        xmax=last_date,
+        lw=3,
+        colors="black",
+    )
 
-    ax.set_xticks(range(n_weeks + 1), minor=True)
-    ax.set_xticks(range(0, n_weeks + 1, 5), minor=False)
+    years_list = list(range(first_date.year, last_date.year+1))
+    ax.set_xticks(
+        [datetime.date(year, 1, 1) for year in years_list],
+        labels=years_list,
+        minor=False,
+    )
+    year, week, _ = first_date.isocalendar()
+    first_week = datetime.date.fromisocalendar(year, week, 1)
+    year, week, _ = last_date.isocalendar()
+    last_week = datetime.date.fromisocalendar(year, week, 7)
+    weeks_list = np.arange(first_week, last_week, 7)
+    ax.set_xticks(
+        weeks_list,
+        minor=True,
+    )
 
-    for label in ax.get_xticklabels()[1:]:
-        x, y = label.get_position()
-        ax.text(x + 0.5, n_beds + 1.05, label.get_text(), ha="center", va="top")
-    ax.set_xticklabels([])
-
-    for label in ax.get_yticklabels()[1 : n_beds + 1]:
-        x, y = label.get_position()
-        ax.text(0.9, y + 0.5, label.get_text(), ha="right", va="center")
-    ax.set_yticklabels([])
-
-    ax.set_xlim(first_week, n_weeks)
-    ax.set_ylim(1, n_beds + 1)
+    ax.set_xlim(first_date, last_date)
+    ax.set_ylim(0, n_beds)
     ax.invert_yaxis()
 
-    ax.grid(axis="x", which="both", ls="--")
+    ax.grid(axis="x", which="major", ls="-", color="black")
+    ax.grid(axis="x", which="minor", ls="--")
 
     return ax
