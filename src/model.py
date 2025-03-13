@@ -101,6 +101,14 @@ class AgroEcoPlanModel:
 
         self.past_crop_plan_vars = []
         if self.crop_calendar.past_crop_plan:
+            isin = np.isin(self.crop_calendar.past_crop_plan.allocated_bed_id, self.beds_data.beds_ids)
+            if (~isin).any():
+                unknown_beds_ids = self.crop_calendar.past_crop_plan.allocated_bed_id[~isin]
+                raise ValueError(
+                    f"Inconsistency in past allocated beds ids with beds data: "
+                    f"beds with id {list(unknown_beds_ids)} not found in beds data"
+                )
+
             self.past_crop_plan_vars = self.model.intvars(
                 self.crop_calendar.past_crop_plan.n_assignments,
                 list(self.crop_calendar.past_crop_plan.allocated_bed_id),
