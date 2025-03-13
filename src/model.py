@@ -272,10 +272,15 @@ class AgroEcoPlanModel:
         """
 
         for group in self.crop_calendar.crops_groups_assignments:
-            # TODO remove len(group) == 1
             assert len(group) > 0
-            group_vars = self.assignment_vars[group]
-            self.model.increasing(group_vars, True).post()
+            if len(group) > 1:
+                group_vars = self.assignment_vars[group]
+
+                # Do not apply symmetry breaking if variables are already instanciated (i.e., past crop plan)
+                if max([len(v.get_domain_values()) for v in group_vars]) == 1:
+                    continue
+
+                self.model.increasing(group_vars, True).post()
 
     # TODO initNumberOfPositivePrecedences
     # TODO initNumberOfPositivePrecedencesCountBased
