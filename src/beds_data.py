@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import networkx as nx
-import numpy as np
 import pandas as pd
+from collections.abc import Sequence
 
 from ._typing import FilePath
 
@@ -33,23 +33,44 @@ class BedsData:
         if isinstance(df_beds_data, FilePath):
             from .data_loaders import CSVBedsDataLoader
             df_beds_data = CSVBedsDataLoader.load(df_beds_data)
-        self.df_beds_data = df_beds_data.copy()
-        self.beds_ids = df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
-        self.adjacency_lists = self.df_beds_data["adjacent_beds"]
 
-        """
-        def adjacency_function(i: int, j: int) -> bool:
-            return j in self.adjacency_list.loc[i]
-        self.adjacency_function = adjacency_function
-        """
+        df_beds_data = df_beds_data.copy()
 
-        self.n_beds = len(self.df_beds_data)
+        self._check_df_beds_data(df_beds_data)
+
+        self.df_beds_data = df_beds_data
+
+    @property
+    def n_beds(self) -> int:
+        return len(self.df_beds_data)
+
+    @property
+    def beds_ids(self) -> list:
+        return self.df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
+
+    @property
+    def adjacency_lists(self) -> pd.DataFrame:
+        return self.df_beds_data["adjacent_beds"]
 
     def __str__(self) -> str:
         return """BedsData(n_beds={})""".format(self.n_beds)
 
     def __len__(self) -> int:
         return self.n_beds
+
+
+    def _check_df_beds_data(self, df_beds_data: pd.DataFrame) -> None:
+        adjacency_lists = df_beds_data["adjacent_beds"]
+        for adjacency_name, adjacency_list in adjacency_lists.items():
+            for i in range(len(adjacency_lists)):
+                if not (
+                    isinstance(adjacency_list[i], Sequence)
+                    and all(map(lambda x: isinstance(x, int), adjacency_list[i]))
+                ):
+                    raise ValueError(
+                        f"'adjacent_beds' columns must contain list of ints "
+                        f"({adjacency_name} is not correct)"
+                    )
 
     def get_adjacency_graph(self, adjacency_name: str) -> nx.Graph:
         """Builds the adjacency graph.
