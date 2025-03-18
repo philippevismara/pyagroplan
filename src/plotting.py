@@ -220,14 +220,7 @@ def plot_solution(
             verticalalignment="center",
         )
 
-    ax.hlines(
-        y=np.cumsum(sizes)[:-1] + 1,
-        xmin=first_date,
-        xmax=last_date,
-        lw=3,
-        colors="black",
-    )
-
+    # Shows years on horizontal axis
     years_list = list(range(first_date.year, last_date.year+1))
     ax.set_xticks(
         [datetime.date(year, 1, 1) for year in years_list],
@@ -245,10 +238,30 @@ def plot_solution(
     )
 
     ax.set_xlim(first_date, last_date)
-    ax.set_ylim(0, n_beds)
-    ax.invert_yaxis()
-
     ax.grid(axis="x", which="major", ls="-", color="black")
     ax.grid(axis="x", which="minor", ls="--")
+
+    # Shows gardens on vertical axis
+    gardens_limits = np.cumsum([0] + list(sizes))
+    ax.hlines(
+        y=gardens_limits[1:-1],
+        xmin=first_date,
+        xmax=last_date,
+        lw=3,
+        colors="black",
+    )
+    garden_names = beds_data.df_beds_data["metadata"]["garden"].unique()
+    for i, garden_name in enumerate(garden_names):
+        ax.text(
+            first_date,
+            gardens_limits[i:i+2].mean(),
+            garden_name,
+            horizontalalignment="center",
+            verticalalignment="center",
+            rotation=90,
+        )
+    ax.set_yticks([])
+    ax.set_ylim(0, n_beds)
+    ax.invert_yaxis()
 
     return ax
