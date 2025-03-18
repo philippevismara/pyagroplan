@@ -21,6 +21,7 @@ def beds_data(beds_data_csv_filename):
 def with_past_crop_plan():
     return False
 
+
 @pytest.fixture
 def crop_calendar(with_past_crop_plan):
     past_crop_plan = None

@@ -30,20 +30,22 @@ class PastCropPlan:
         df_past_crop_plan = df_past_crop_plan.copy()
 
         # TODO refactor and test date format before changing it
-        from pandas._libs.tslibs.parsing import DateParseError
         try:
             df_past_crop_plan.starting_date = pd.to_datetime(
                 df_past_crop_plan.starting_date,
+                format="ISO8601",
             ).dt.date
             df_past_crop_plan.ending_date = pd.to_datetime(
                 df_past_crop_plan.ending_date,
+                format="ISO8601",
             ).dt.date
-        except DateParseError:
+        except ValueError:
             from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
             df_past_crop_plan.starting_date = starting_week_str_to_datetime(df_past_crop_plan.starting_date)
             df_past_crop_plan.ending_date = ending_week_str_to_datetime(df_past_crop_plan.ending_date)
 
         df_past_crop_plan.index = -(df_past_crop_plan.index+1)
+        df_past_crop_plan["is_future_crop"] = False
 
         from .crop_calendar import _build_assignments_dataframe
         import numpy as np

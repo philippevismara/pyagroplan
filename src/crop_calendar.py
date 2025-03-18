@@ -70,15 +70,16 @@ class CropCalendar:
         df_future_crop_calendar = df_future_crop_calendar.copy()
 
         # TODO refactor and test date format before changing it
-        from pandas._libs.tslibs.parsing import DateParseError
         try:
             df_future_crop_calendar.starting_date = pd.to_datetime(
                 df_future_crop_calendar.starting_date,
+                format="ISO8601",
             ).dt.date
             df_future_crop_calendar.ending_date = pd.to_datetime(
                 df_future_crop_calendar.ending_date,
+                format="ISO8601",
             ).dt.date
-        except DateParseError:
+        except ValueError:
             from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
             df_future_crop_calendar.starting_date = starting_week_str_to_datetime(df_future_crop_calendar.starting_date)
             df_future_crop_calendar.ending_date = ending_week_str_to_datetime(df_future_crop_calendar.ending_date)
@@ -88,6 +89,8 @@ class CropCalendar:
         df_crop_calendar = df_crop_calendar.sort_values(
             by=["starting_date", "ending_date", "crop_name", "quantity"],
         )
+
+        df_crop_calendar["is_future_crop"] = True
 
         df_assignments = _build_assignments_dataframe(
             df_crop_calendar.drop(columns="quantity"),
@@ -141,7 +144,7 @@ class CropCalendar:
         self.df_crop_calendar = df_crop_calendar
         self.df_crop_types_attributes = df_crop_types_attributes
 
-        self.df_future_crop_calendar = df_future_crop_calendar
+        self.df_future_crop_calendar = df_crop_calendar.iloc[-len(df_future_crop_calendar):]
         self.past_crop_plan = past_crop_plan
 
         self.global_starting_date = df_future_crop_calendar.starting_date.min()

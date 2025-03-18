@@ -373,6 +373,8 @@ class BinaryNeighbourhoodConstraint(Constraint):
         self.adjacency_graph = adjacency_graph
         self.forbidden = forbidden
 
+        self.is_future_crop = self.crop_calendar.df_assignments["is_future_crop"]
+
     @abstractmethod
     def crops_selection_function(self, i: int, j: int) -> bool: ...
 
@@ -384,7 +386,10 @@ class BinaryNeighbourhoodConstraint(Constraint):
         constraints = []
 
         for i, j in self.crop_calendar.overlapping_cultures_iter(2):
-            if self.crops_selection_function(i, j):
+            if (
+                (self.is_future_crop[i] or self.is_future_crop[j])
+                and self.crops_selection_function(i, j)
+            ):
                 a_i, a_j = assignment_vars[i], assignment_vars[j]
 
                 tuples = []
@@ -404,7 +409,10 @@ class BinaryNeighbourhoodConstraint(Constraint):
         assignments = solution.crops_planning
 
         for i, j in self.crop_calendar.overlapping_cultures_iter(2):
-            if self.crops_selection_function(i, j):
+            if (
+                (self.is_future_crop[i] or self.is_future_crop[j])
+                and self.crops_selection_function(i, j)
+            ):
                 a_i, a_j = assignments.iloc[i], assignments.iloc[j]
 
                 if self.forbidden and self.adjacency_graph.has_edge(a_i["assignment"], a_j["assignment"]):

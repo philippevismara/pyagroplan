@@ -39,13 +39,12 @@ class FamilyCropsRotationConstraint(SuccessionConstraint):
         families = crop_calendar.df_assignments["crop_family"].values
 
         intervals = crop_calendar.cropping_intervals.copy()
-        intervals["ending_date"] += return_delays
-        starting_dates = crop_calendar.df_assignments["starting_date"].values
-        global_starting_date = crop_calendar.global_starting_date
+        intervals["ending_date"] = (pd.to_datetime(intervals.ending_date) + return_delays).dt.date
+        is_future_crop = crop_calendar.df_assignments["is_future_crop"].values
 
         def filter_func(i: int, j: int) -> bool:
             return (
-                (global_starting_date <= max(starting_dates[i], starting_dates[j]))
+                (is_future_crop[i] or is_future_crop[j])
                 and (families[i] == families[j])
             )
         
@@ -88,16 +87,19 @@ class CropTypesRotationConstraint(SuccessionConstraint):
         crop_type_return_delays_graph = dataframe_to_directed_graph(return_delays)
         intervals = crop_calendar.cropping_intervals
         starting_dates = crop_calendar.df_assignments["starting_date"].values
-        global_starting_date = crop_calendar.global_starting_date
         crop_types = crop_calendar.df_assignments["crop_type"].values
+        is_future_crop = crop_calendar.df_assignments["is_future_crop"].values
         
         def filter_func(i: int, j: int) -> bool:
             return (
-                (global_starting_date <= max(starting_dates[i], starting_dates[j]))
+                (is_future_crop[i] or is_future_crop[j])
                 and (crop_types[i], crop_types[j]) in crop_type_return_delays_graph.edges
                 and (
                     starting_dates[i]
-                    + crop_type_return_delays_graph.edges[crop_types[i], crop_types[j]]["return_delay"]
+                    + crop_type_return_delays_graph.edges[
+                        crop_types[i],
+                        crop_types[j]
+                    ]["return_delay"]
                     >= starting_dates[j]
                 )
             )
@@ -177,7 +179,6 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
             self.categorisation = crop_calendar.df_assignments.index.values
 
         import re
-
         int_pattern = r"[+-]?[0-9]+"
         self.regex_prog = re.compile(
             rf"([\+-])\[({int_pattern}),({int_pattern})\]"
@@ -194,6 +195,7 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
             self.categorisation[j]
         ]
 
+        # Checks if there is no constraint enforced in the matrix
         import numpy as np
         if (
             (isinstance(interaction_str, (float, np.floating)) and np.isnan(interaction_str))
