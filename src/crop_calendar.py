@@ -156,6 +156,7 @@ class CropCalendar:
 
         self.crops_groups = df_assignments["crop_group_id"]
         self.crops_groups_assignments = list(df_assignments.groupby("crop_group_id").indices.values())
+        self.future_crops_groups_assignments = list(self.df_future_assignments.groupby("crop_group_id").indices.values())
         
         self.crop_calendar = df_assignments[["crop_name", "starting_date", "ending_date"]]
         self.crops_names = df_assignments["crop_name"].array

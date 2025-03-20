@@ -8,6 +8,7 @@ from src.constraints import constraints as cstrs
 from src.model import AgroEcoPlanModel
 from src.beds_data import BedsData
 from src.crop_calendar import CropCalendar
+from src.past_crop_plan import PastCropPlan
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -21,8 +22,10 @@ def beds_data():
 
 @pytest.fixture
 def crop_calendar():
+    past_crop_plan = PastCropPlan(DATA_PATH / "past_crop_plan.csv")
     return CropCalendar(
         DATA_PATH / "crop_calendar.csv",
+        past_crop_plan=past_crop_plan,
         df_crop_types_attributes=DATA_PATH / "crop_types_attributes.csv",
     )
 
@@ -59,8 +62,8 @@ def test_forbid_negative_interactions_subintervals_constraint(crop_calendar, bed
     df_spatial_interactions_matrix = pd.DataFrame(
         [
             ["", "+[1,-1][1,-1]", "+[1,-1][1,-1]"],
-            ["+[1,-1][1,-1]", "", "-[1,-1][-2,-1]"],
-            ["+[1,-1][1,-1]", "-[-2,-1][1,-1]", ""],
+            ["+[1,-1][1,-1]", "-[1,-1][1,-1]", "-[1,-1][-2,-1]"],
+            ["+[1,-1][1,-1]", "-[-2,-1][1,-1]", "-[1,-1][1,-1]"],
         ],
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
@@ -129,8 +132,8 @@ def test_family_crops_rotation_constraint(crop_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    #assert len(solutions) == 0
-    assert len(solutions) > 0
+    assert len(solutions) == 0
+    #assert len(solutions) > 0
 
     for solution in solutions:
         assert constraint.check_solution(solution)[0]
@@ -176,7 +179,20 @@ def test_group_identical_crops_together_constraint(crop_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    #assert len(solutions) == 0
+    assert len(solutions) == 0
+
+
+    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+
+    constraint = cstrs.GroupIdenticalCropsTogetherConstraint(
+        crop_calendar,
+        beds_data,
+        adjacency_name="spatially_close_beds",
+    )
+    model.init([constraint])
+    model.configure_solver()
+    solutions = list(model.iterate_over_all_solutions())
+    
     assert len(solutions) > 0
 
     for solution in solutions:
@@ -218,7 +234,8 @@ def test_crops_location_constraint(crop_calendar, beds_data):
     model.configure_solver()
     solutions = list(model.iterate_over_all_solutions())
 
-    assert len(solutions) > 0
+    assert len(solutions) == 0
+    #assert len(solutions) > 0
 
     for solution in solutions:
         assert constraint.check_solution(solution)[0]

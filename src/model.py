@@ -44,7 +44,8 @@ def _get_available_search_strategies() -> dict[str, Callable]:
             search_name = match[1]
             # TODO update pychoco to avoid doing this manually
             if search_name == "default":
-                method_func = lambda solver, *_: method_func(solver)
+                default_method_func = method_func  # Necessary to avoid rewriting of variable before function call
+                method_func = lambda solver, *_: default_method_func(solver)
             available_search_strategies[search_name] = method_func
 
     return available_search_strategies
@@ -195,8 +196,13 @@ class AgroEcoPlanModel:
         func = available_search_strategies[search_strategy]
         func(self.solver, *self.assignment_vars)
 
-    def solve(self) -> Solution:
+    def solve(self, **kwargs: Any) -> Solution:
         """Attempts to solve the model.
+
+        Parameters
+        ----------
+        kwargs :
+            Arguments to pass to Pychoco's solver solve() function.
 
         Raises
         ------
@@ -207,7 +213,7 @@ class AgroEcoPlanModel:
         -------
         Solution
         """
-        has_solution = self.solver.solve()
+        has_solution = self.solver.solve(**kwargs)
         if not has_solution:
             raise RuntimeError("No solution found")
         else:

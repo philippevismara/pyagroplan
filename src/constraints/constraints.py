@@ -65,6 +65,7 @@ class CropTypesRotationConstraint(SuccessionConstraint):
     ----------
     crop_calendar : CropCalendar
     return_delays : pd.DataFrame
+        Matrix containing the return delays, an entry i,j corresponds to a return delay applied after a crop of type i on crops of type j.
     """
 
     def __init__(self, crop_calendar: CropCalendar, return_delays: pd.DataFrame):
@@ -319,8 +320,7 @@ class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
         adjacency_name: str,
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        groups = crop_calendar.crops_groups_assignments
-        super().__init__(groups, adjacency_graph, forbidden=False)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=False)
 
 
 class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):
