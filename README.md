@@ -34,3 +34,8 @@ make html
 ```
 
 The documentation is then available at `docs/build/html/index.html`.
+
+
+## License
+
+Pyagroplan has a CeCILL-C license, as found in the [LICENSE.md](LICENSE.md) file.
