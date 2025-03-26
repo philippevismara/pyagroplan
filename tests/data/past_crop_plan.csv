@@ -2,6 +2,6 @@
 # data_version: 1
 # format_version: 0.1
 crop_name;crop_type;starting_date;ending_date;allocated_beds_ids
-tomate;tomate;2019-W40;2019-W50;1,2,4
 carotte;carotte;2019-W40;2019-W45;3,5
+tomate;tomate;2019-W40;2019-W50;1,2,4
 pomme_de_terre;pomme_de_terre;2019-W46;2020-W02;3,5

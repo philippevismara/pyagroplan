@@ -44,6 +44,10 @@ class PastCropPlan:
             df_past_crop_plan.starting_date = starting_week_str_to_datetime(df_past_crop_plan.starting_date)
             df_past_crop_plan.ending_date = ending_week_str_to_datetime(df_past_crop_plan.ending_date)
 
+        df_past_crop_plan = df_past_crop_plan.sort_values(
+            by=["starting_date", "ending_date", "crop_name"],
+        )
+
         df_past_crop_plan.index = -(df_past_crop_plan.index+1)
         df_past_crop_plan["is_future_crop"] = False
 
