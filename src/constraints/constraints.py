@@ -16,6 +16,7 @@ from .cp_constraints_pychoco import (
     SuccessionConstraintWithReinitialisation,
     LocationConstraint,
 )
+from ..utils.utils import timedelta_dataframe_to_directed_graph
 
 
 class FamilyCropsRotationConstraint(SuccessionConstraint):
@@ -73,19 +74,10 @@ class CropTypesRotationConstraint(SuccessionConstraint):
         return_delays = return_delays.map(lambda i: datetime.timedelta(weeks=i))
         self.return_delays = return_delays
 
-        # TODO refactor this
-        def dataframe_to_directed_graph(df: pd.DataFrame) -> nx.DiGraph:
-            import networkx as nx
-            graph = nx.from_pandas_adjacency(df != datetime.timedelta(weeks=0), nx.DiGraph)
-            values = {(u, v): df.loc[u, v] for u, v in graph.edges}
-            nx.set_edge_attributes(
-                graph,
-                values,
-                name="return_delay",
-            )
-            return graph
-
-        crop_type_return_delays_graph = dataframe_to_directed_graph(return_delays)
+        crop_type_return_delays_graph = timedelta_dataframe_to_directed_graph(
+            return_delays,
+            name="return_delay",
+        )
         intervals = crop_calendar.cropping_intervals
         starting_dates = crop_calendar.df_assignments["starting_date"].values
         crop_types = crop_calendar.df_assignments["crop_type"].values
@@ -325,8 +317,10 @@ class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
 
 class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):
     def __init__(self, crop_calendar: CropCalendar, precedences: pd.DataFrame):
-        import networkx as nx
-        precedences_graph = nx.from_pandas_adjacency(precedences, nx.DiGraph)
+        precedences_graph = timedelta_dataframe_to_directed_graph(
+            precedences,
+            name="precedence_effect_duration",
+        )
 
         intervals = crop_calendar.cropping_intervals
         starting_dates = crop_calendar.df_assignments["starting_date"].values
