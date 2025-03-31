@@ -20,7 +20,7 @@ from matplotlib import patches
 from matplotlib import pyplot as plt
 
 
-def get_crops_colors_by_crop_family(
+def get_crops_colors_by_botanical_family(
     crop_calendar: CropCalendar,
     colors_list: Optional[Collection] = None,
 ) -> dict[str, Any]:
@@ -28,7 +28,7 @@ def get_crops_colors_by_crop_family(
         from matplotlib import colormaps
         colors_list = colormaps["tab20"].colors
 
-    families_names = crop_calendar.df_crop_calendar["crop_family"].unique()
+    families_names = crop_calendar.df_crop_calendar["botanical_family"].unique()
     families_names.sort()
 
     fam_colors = {
@@ -37,11 +37,11 @@ def get_crops_colors_by_crop_family(
     }
 
     crops_data = crop_calendar.df_crop_calendar.drop_duplicates(
-        subset=["crop_name", "crop_family"]
+        subset=["crop_name", "botanical_family"]
     )
 
     crops_colors = {
-        crop_data.crop_name: fam_colors[crop_data.crop_family]
+        crop_data.crop_name: fam_colors[crop_data.botanical_family]
         for crop_data in crops_data.itertuples()
     }
 
@@ -59,7 +59,7 @@ def plot_crop_calendar(
 
     colors = colors or {}
     if colors == "auto":
-        colors = get_crops_colors_by_crop_family(crop_calendar)
+        colors = get_crops_colors_by_botanical_family(crop_calendar)
 
     df_crop_calendar = crop_calendar.df_crop_calendar[
         ["crop_name", "starting_date", "ending_date", "quantity"]
@@ -188,7 +188,7 @@ def plot_solution(
 
     colors = colors if colors is not None else defaultdict()
     if colors == "auto":
-        colors = get_crops_colors_by_crop_family(solution.crop_calendar)
+        colors = get_crops_colors_by_botanical_family(solution.crop_calendar)
 
     import networkx as nx
     beds_adjacency_graph = beds_data.get_adjacency_graph("garden_neighbors")
