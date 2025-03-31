@@ -6,6 +6,7 @@ if TYPE_CHECKING:
 
 import warnings
 from abc import ABC, abstractmethod
+import datetime
 
 import pandas as pd
 
@@ -56,7 +57,10 @@ class ConstraintDefinitionsParser(ABC):
         }
 
         for name, matrix in matrices.items():
-            if (matrix == "").all(axis=None):
+            if (
+                (matrix == "").all(axis=None)
+                or (matrix == datetime.timedelta(weeks=0)).all(axis=None)
+            ):
                 warnings.warn(
                     f"Empty constraint matrix, thus does not constrain the model (constraint name: {name})"
                 )
@@ -110,11 +114,10 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
                 f"'forbidden' or 'enforced', given {type}."
             )
 
-        import datetime
         default_value = datetime.timedelta(days=0)
         #precendence_effect_delay = kwargs["precedence_effect_delay"]
         #value = eval(f"datetime.timedelta({precendence_effect_delay})")
-        value = int(type + kwargs["precedence_effect_delay_in_weeks"])
+        value = datetime.timedelta(weeks=int(type + kwargs["precedence_effect_delay_in_weeks"]))
 
         rule_str = kwargs["rule"]
 
