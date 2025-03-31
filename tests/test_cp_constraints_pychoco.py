@@ -35,8 +35,8 @@ def test_succession_constraint_solution_checking(crop_calendar):
     import pandas as pd
     df_return_delays = pd.DataFrame(
         [
-            [5, 0, 0],
-            [52, 0, 0],
+            [5, 52, 0],
+            [0, 0, 0],
             [0, 0, 0],
         ],
         index=["carotte", "tomate", "pomme_de_terre"],

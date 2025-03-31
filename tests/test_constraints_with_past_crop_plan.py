@@ -143,8 +143,8 @@ def test_crop_types_rotation_constraint(crop_calendar, beds_data):
     import pandas as pd
     df_return_delays = pd.DataFrame(
         [
-            [5, 0, 0],
-            [7, 0, 0],
+            [5, 7, 0],
+            [0, 0, 0],
             [0, 0, 0],
         ],
         index=["carotte", "tomate", "pomme_de_terre"],

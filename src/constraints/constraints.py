@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 import datetime
-    
+
 from .cp_constraints_pychoco import (
     BinaryNeighbourhoodConstraint,
     GroupNeighbourhoodConstraint,
@@ -68,7 +68,7 @@ class CropTypesRotationConstraint(SuccessionConstraint):
     ----------
     crop_calendar : CropCalendar
     return_delays : pd.DataFrame
-        Matrix containing the return delays, an entry i,j corresponds to a return delay applied after a crop of type i on crops of type j.
+        Matrix containing the return delays, an entry i,j corresponds to a return delay applied after a crop of type j (precedent crop) on crops of type i (following crop).
     """
 
     def __init__(self, crop_calendar: CropCalendar, return_delays: pd.DataFrame):
@@ -77,7 +77,7 @@ class CropTypesRotationConstraint(SuccessionConstraint):
         self.return_delays = return_delays
 
         crop_type_return_delays_graph = timedelta_dataframe_to_directed_graph(
-            return_delays,
+            return_delays.T,
             name="return_delay",
         )
         intervals = crop_calendar.cropping_intervals
@@ -114,6 +114,8 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
     Parameters
     ----------
     crop_calendar : CropCalendar
+    df_crops_interactions_matrix: pd.DataFrame
+        Matrix containing the interactions, a negative entry i,j corresponds to negative interaction between crop i and crop j.
     beds_data : BedsData
     adjacency_name : string
     """
@@ -152,6 +154,9 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
     Parameters
     ----------
     crop_calendar : CropCalendar
+    df_crops_interactions_matrix: pd.DataFrame
+        Matrix containing the interactions, an entry i,j corresponds to an interaction between crop i and crop j.
+        It contains a string of the form "-[1,3][1,-1]", for instance, to forbid a spatial interaction between crop i during its 3 first week of cultivation and crop j during its whole cultivation period.
     beds_data : BedsData
     adjacency_name : string
     """
