@@ -64,6 +64,7 @@ def read_csv_metadata(filename: FilePath, prefix_char: str = "#") -> dict[str, s
                 break
 
             row = row[1:].strip()
+            row = row.rstrip(";")  # Remove trailing semi-colons introduced by Excel or Libre Office
 
             key, sep, value = row.partition(":")
             if len(sep) == 0:
