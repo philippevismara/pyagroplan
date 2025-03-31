@@ -140,10 +140,56 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
             res = pd.Series(index=df_data.index, dtype=str)
             res[:] = default_value
             ind = eval(rule_str)
-            res[ind] = value
+            res[ind] = self.parse_value_str(value, row_data, df_data[ind])
             return res
 
         return rule_func
+
+    def parse_value_str(self, value_str: str, row_data: pd.Series, df_data: pd.DataFrame) -> str:
+        # [1,3][-crop2["harvesting_time"]-4,-crop2["harvesting_time"]-1]
+        value_str = value_str.strip()
+
+        value_str = value_str.replace("crop1", "row_data")
+        value_str = value_str.replace("crop2", "df_data")
+        value_str = value_str.replace("\n", "")
+
+        import re
+        int_pattern = r"[+-]?[0-9]+"
+        interval_pattern = r"\[(.+),(.+)\]"
+        m = re.match(
+            rf"^([\+-]){interval_pattern}\w*{interval_pattern}$",
+            value_str,
+        )
+        if not m:
+            raise ValueError(
+                f"Can not process value string in spatial constraint definition: {value_str}"
+            )
+
+        sign, s1, e1, s2, e2 = m.groups()
+        res = sign + "["
+        if re.fullmatch(int_pattern, s1.strip()):
+            res += s1
+        else:
+            res += (eval(s1)).astype(int).astype(str)
+        res += ","
+        if re.fullmatch(int_pattern, e1.strip()):
+            res += e1
+        else:
+            res += (eval(e1)).astype(int).astype(str)
+        res += "]["
+        if re.fullmatch(int_pattern, s2.strip()):
+            res += s2
+        else:
+            res += (eval(s2)).astype(int).astype(str)
+        res += ","
+        if re.fullmatch(int_pattern, e2.strip()):
+            res += e2
+        else:
+            res += (eval(e2)).astype(int).astype(str)
+        res += "]"
+
+        return res
+
 
     def parse_rule(self, **kwargs: Any) -> Callable:
         # TODO adjacency_type
@@ -160,6 +206,7 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
                 f"'forbidden' or 'enforced', given {type}."
             )
         value = kwargs["intervals_overlap"]
+        #value = self.parse_value_str(kwargs["intervals_overlap"])
         value = type + value
 
         rule_str = kwargs["rule"]
