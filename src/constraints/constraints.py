@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from ..beds_data import BedsData
     from ..crop_calendar import CropCalendar
 
@@ -307,12 +309,12 @@ class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
 
     def __init__(
         self,
-        crop_calendar: CropCalendar,
+        crops_groups: Sequence[Sequence[int]],
         beds_data: BedsData,
         adjacency_name: str,
     ):
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        super().__init__(crop_calendar, adjacency_graph, forbidden=False)
+        super().__init__(crops_groups, adjacency_graph, forbidden=False)
 
 
 class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):

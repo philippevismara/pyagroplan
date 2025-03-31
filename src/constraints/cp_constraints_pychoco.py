@@ -429,7 +429,7 @@ class GroupNeighbourhoodConstraint(Constraint):
 
     Parameters
     ----------
-    crop_calendar : CropCalendar
+    crops_groups : Sequence[Sequence[int]]
     adjacency_graph : nx.Graph
         Graph representing the spatial proximity.
     forbidden : bool
@@ -438,15 +438,13 @@ class GroupNeighbourhoodConstraint(Constraint):
 
     def __init__(
         self,
-        crop_calendar: CropCalendar,
+        crops_groups: Sequence[Sequence[int]],
         adjacency_graph: nx.Graph,
         forbidden: bool,
     ):
-        self.crop_calendar = crop_calendar
+        self.crops_groups = crops_groups
         self.adjacency_graph = adjacency_graph
         self.forbidden = forbidden
-
-        self.future_crops_groups = self.crop_calendar.future_crops_groups_assignments
 
     def build(
         self,
@@ -455,7 +453,7 @@ class GroupNeighbourhoodConstraint(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for crops_group in self.future_crops_groups:
+        for crops_group in self.crops_groups:
             assert len(crops_group) > 0
             if len(crops_group) == 1:
                 continue
@@ -494,7 +492,7 @@ class GroupNeighbourhoodConstraint(Constraint):
         assignments = solution.crops_planning
 
         import networkx as nx
-        for crops_group in self.future_crops_groups:
+        for crops_group in self.crops_groups:
             beds = assignments.iloc[crops_group]["assignment"]
 
             subgraph = nx.induced_subgraph(self.adjacency_graph, beds)

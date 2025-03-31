@@ -171,7 +171,7 @@ def test_group_identical_crops_together_constraint(crop_calendar, beds_data):
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
     constraint = cstrs.GroupIdenticalCropsTogetherConstraint(
-        crop_calendar,
+        crop_calendar.future_crops_groups_assignments,
         beds_data,
         adjacency_name="garden_neighbors",
     )
@@ -185,7 +185,7 @@ def test_group_identical_crops_together_constraint(crop_calendar, beds_data):
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 
     constraint = cstrs.GroupIdenticalCropsTogetherConstraint(
-        crop_calendar,
+        crop_calendar.future_crops_groups_assignments,
         beds_data,
         adjacency_name="spatially_close_beds",
     )

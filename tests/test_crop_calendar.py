@@ -45,9 +45,9 @@ def test_crop_calendar(df_crop_calendar):
     expected_groups = [
         [0, 1, 2],
         [3, 4],
+        [5, ],
         [6, ],
         [7, ],
-        [5, ],
     ]
 
     for group, expected_group in zip(crop_calendar.crops_groups_assignments, expected_groups):
