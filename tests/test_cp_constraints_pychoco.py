@@ -42,6 +42,8 @@ def test_succession_constraint_solution_checking(crop_calendar):
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
+    import datetime
+    df_return_delays = df_return_delays.map(lambda i: datetime.timedelta(weeks=i))
 
     constraint = cstrs2.CropTypesRotationConstraint(
         crop_calendar,

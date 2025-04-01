@@ -12,8 +12,6 @@ from ..beds_data import BedsData
 from ..crop_calendar import CropCalendar
 from ..past_crop_plan import PastCropPlan
 
-N_WEEKS_PER_YEAR = 52
-
 
 class CSVDataLoader:
     @classmethod
@@ -77,4 +75,24 @@ class CSVCropTypesAttributesLoader(CSVDataLoader):
             sep=";",
             comment="#",
         )
+        return df
+
+
+class CSVReturnDelaysLoader(CSVDataLoader):
+    @staticmethod
+    def _load_v0_1(filename: FilePath) -> pd.DataFrame:
+        # TODO allow for years and weeks units
+        df = pd.read_csv(
+            filename,
+            sep=";",
+            comment="#",
+            index_col=0,
+        )
+
+        df.fillna(0, inplace=True)
+        df *= 52  # Number of weeks per year
+
+        import datetime
+        df = df.map(lambda i: datetime.timedelta(weeks=i))
+
         return df

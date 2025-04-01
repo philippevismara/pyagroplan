@@ -150,6 +150,8 @@ def test_crop_types_rotation_constraint(crop_calendar, beds_data):
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
+    import datetime
+    df_return_delays = df_return_delays.map(lambda i: datetime.timedelta(weeks=i))
 
     model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
 

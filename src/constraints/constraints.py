@@ -72,8 +72,7 @@ class CropTypesRotationConstraint(SuccessionConstraint):
     """
 
     def __init__(self, crop_calendar: CropCalendar, return_delays: pd.DataFrame):
-        # TODO get return delays with units from the start
-        return_delays = return_delays.map(lambda i: datetime.timedelta(weeks=i))
+        # TODO check return delays is in type timedelta
         self.return_delays = return_delays
 
         crop_type_return_delays_graph = timedelta_dataframe_to_directed_graph(
