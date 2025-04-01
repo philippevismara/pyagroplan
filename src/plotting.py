@@ -110,20 +110,22 @@ def plot_crop_calendar(
     ax.invert_yaxis()
 
     ax.grid(axis="x", which="major", ls="-", color="black")
-    ax.grid(axis="x", which="minor", ls="--")
+    ax.grid(axis="x", which="minor", ls="-", alpha=0.5)
+    ax.set_axisbelow(True)
 
     return ax
 
 
 def plot_beds_adjacency_graph(
     beds_data: BedsData,
+    adjacency_name: str,
     ax: Optional[plt.Axes] = None,
 ) -> plt.Axes:
     if not ax:
         fig = plt.figure()
         ax = fig.gca()
 
-    beds_adjacency_graph = beds_data.get_adjacency_graph()
+    beds_adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
 
     if "garden_id" in beds_data.df_beds_data.columns:
         gb = beds_data.df_beds_data.groupby("garden_id")
@@ -239,7 +241,8 @@ def plot_solution(
 
     ax.set_xlim(first_date, last_date)
     ax.grid(axis="x", which="major", ls="-", color="black")
-    ax.grid(axis="x", which="minor", ls="--")
+    ax.grid(axis="x", which="minor", ls="-", alpha=0.5)
+    ax.set_axisbelow(True)
 
     # Shows gardens on vertical axis
     gardens_limits = np.cumsum([0] + list(sizes))
