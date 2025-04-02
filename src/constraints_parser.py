@@ -2,7 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Any, Callable, Optional
+
+    from .crop_calendar import CropCalendar
+    from .constraints.cp_constraints_pychoco import Constraint
 
 import warnings
 from abc import ABC, abstractmethod
@@ -11,6 +14,7 @@ import datetime
 import pandas as pd
 
 from ._typing import FilePath
+from .constraints import constraints as cstrs
 
 
 class ConstraintDefinitionsParser(ABC):
@@ -27,6 +31,35 @@ class ConstraintDefinitionsParser(ABC):
     @abstractmethod
     def parse_rule(self, **kwargs: Any) -> Callable:
         ...
+
+    @abstractmethod
+    def build_constraint_from_definition_dict(
+        self,
+        crop_calendar: CropCalendar,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        ...
+
+    def build_constraints_from_definition_dict(
+        self,
+        crop_calendar: CropCalendar,
+        def_dict: dict,
+        *args: Any,
+        **kwargs: Any,
+    ) -> dict[str, Constraint]:
+        return {
+            constraint_name: self.build_constraint_from_definition_dict(
+                crop_calendar,
+                definition,
+                constraint_name,
+                *args,
+                **kwargs,
+            )
+            for constraint_name, definition in def_dict.items()
+        }
 
     def build_matrices_from_definition_file(
         self,
@@ -48,36 +81,38 @@ class ConstraintDefinitionsParser(ABC):
         df_data: pd.DataFrame,
         def_dict: dict,
     ) -> dict[str, pd.DataFrame]:
-        matrices = {
-            name: self.build_matrix_from_constraint_func(
+        return {
+            name: self.build_matrix_from_definition_dict(
                 df_data,
-                self.parse_rule(**definition),
+                definition,
+                name=name,
             )
             for name, definition in def_dict.items()
         }
 
-        for name, matrix in matrices.items():
-            if (
-                (matrix == "").all(axis=None)
-                or (matrix == datetime.timedelta(weeks=0)).all(axis=None)
-            ):
-                warnings.warn(
-                    f"Empty constraint matrix, thus does not constrain the model (constraint name: {name})"
-                )
-
-        return matrices
-
-
-    def build_matrix_from_constraint_func(
+    def build_matrix_from_definition_dict(
         self,
         df_data: pd.DataFrame,
-        constraint_func: Callable,
+        definition_dict: dict,
+        name: Optional[str]=None,
     ) -> pd.DataFrame:
-        df_matrix = df_data.apply(constraint_func, axis=1, args=(df_data,))
+        df_matrix = df_data.apply(
+            self.parse_rule(**definition_dict),
+            axis=1,
+            args=(df_data,),
+        )
         df_matrix.index = df_data.index
         df_matrix.columns = df_data.index
-        return df_matrix
 
+        if (
+            (df_matrix == "").all(axis=None)
+            or (df_matrix == datetime.timedelta(weeks=0)).all(axis=None)
+        ):
+            warnings.warn(
+                f"Empty constraint matrix, thus does not constrain the model (constraint name: {name})"
+            )
+
+        return df_matrix
 
 
 class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
@@ -123,6 +158,30 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
 
         rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
         return rule
+
+    def build_constraint_from_definition_dict(
+        self,
+        crop_calendar: CropCalendar,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        matrix = self.build_matrix_from_definition_dict(
+            crop_calendar.df_assignments,
+            def_dict,
+            name=name,
+        )
+
+        if def_dict["type"] == "forbidden":
+            return cstrs.ForbidNegativePrecedencesConstraint(
+                crop_calendar,
+                matrix,
+                *args,
+                **kwargs,
+            )
+        else:
+            raise NotImplementedError()
 
 
 class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser):
@@ -217,3 +276,29 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
 
         return rule
+
+
+    def build_constraint_from_definition_dict(
+        self,
+        crop_calendar: CropCalendar,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        matrix = self.build_matrix_from_definition_dict(
+            crop_calendar.df_assignments,
+            def_dict,
+            name=name,
+        )
+
+        if def_dict["type"] == "forbidden":
+            return cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
+                crop_calendar,
+                matrix,
+                *args,
+                adjacency_name=def_dict["adjacency_type"],
+                **kwargs,
+            )
+        else:
+            raise NotImplementedError()
