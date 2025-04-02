@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from pychoco.variables import IntVar
 
     from .beds_data import BedsData
-    from .constraints.cp_constraints_pychoco import Constraint
     from .crop_calendar import CropCalendar
     from .solution import Solution
 
@@ -18,6 +17,7 @@ from pychoco.solver import Solver as ChocoSolver
 from pychoco.variables.boolvar import BoolVar
 from pychoco.constraints.cnf.log_op import LogOp
 
+from .constraints.cp_constraints_pychoco import Constraint
 from .solution import Solution
 
 
@@ -126,6 +126,8 @@ class AgroEcoPlanModel:
             + self.future_assignment_vars
         )
 
+        self._constraints = {}
+
     def __str__(self) -> str:
         return "AgroEcoPlanModel(crop_calendar={}, beds_data={}, verbose={})".format(
             self.crop_calendar,
@@ -133,7 +135,7 @@ class AgroEcoPlanModel:
             self.verbose,
         )
 
-    def init(self, constraints: Sequence[Constraint] = tuple()) -> None:
+    def init(self, constraints: Sequence[Constraint]|Constraint = tuple()) -> None:
         """Initialises the model with non-overlapping assignments constraints, symmetry breaking constraints and the constraints provided as parameter.
 
         Parameters
@@ -141,6 +143,9 @@ class AgroEcoPlanModel:
         constraints :
             List of constraints to initialise the model with.
         """
+        if isinstance(constraints, Constraint):
+            constraints = [constraints]
+
         self._add_non_overlapping_assignments_constraints()
         self._break_symmetries()
 
@@ -170,6 +175,8 @@ class AgroEcoPlanModel:
                 self.model.add_clauses_logop(cstr)
             else:
                 raise ValueError(f"unknown constraint type {type(cstr)}")
+
+        self._constraints[constraint] = constraints
 
     def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
         raise NotImplementedError()
@@ -266,9 +273,18 @@ class AgroEcoPlanModel:
 
     def _add_non_overlapping_assignments_constraints(self) -> None:
         """Adds non-overlapping assignments constraints as part of the basic model definition."""
+        constraints = []
+
         for overlapping_crops in self.crop_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
-            self.model.all_different(overlapping_assignment_vars).post()
+
+            constraint = self.model.all_different(overlapping_assignment_vars)
+            constraint.post()
+
+            constraints.append(constraint)
+
+        self._constraints["non_overlapping_assignments_constraints"] = constraints
+
 
     def _break_symmetries(self) -> None:
         """Adds symmetry-breaking constraints as part of the basic model definition.
@@ -276,6 +292,7 @@ class AgroEcoPlanModel:
         The symmetry-breaking constraints consist of `increasing` constraints on
         assignment variables part of the same cropping group.
         """
+        constraints = []
 
         for group in self.crop_calendar.crops_groups_assignments:
             assert len(group) > 0
@@ -286,7 +303,25 @@ class AgroEcoPlanModel:
                 if max([len(v.get_domain_values()) for v in group_vars]) == 1:
                     continue
 
-                self.model.increasing(group_vars, True).post()
+                constraint = self.model.increasing(group_vars, True)
+                constraint.post()
+                constraints.append(constraint)
 
-    # TODO initNumberOfPositivePrecedences
-    # TODO initNumberOfPositivePrecedencesCountBased
+        self._constraints["symmetry_breaking_constraints"] = constraints
+
+
+    def print_constraints_statistics(self) -> None:
+        for constraint_obj, cp_constraints in self._constraints.items():
+            if isinstance(constraint_obj, str):
+                constraint_name = constraint_obj
+            else:
+                constraint_name = constraint_obj.__class__.__name__
+
+            if len(cp_constraints) > 0:
+                if hasattr(cp_constraints[0], "get_name"):
+                    constraint_type = cp_constraints[0].get_name()
+                else:
+                    constraint_type = cp_constraints[0]
+                print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
+            else:
+                print(f"{constraint_name}: {len(cp_constraints)} constraints")
