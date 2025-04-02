@@ -330,19 +330,21 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
 
         intervals = crop_calendar.cropping_intervals
         starting_dates = crop_calendar.df_assignments["starting_date"].values
+        ending_dates = crop_calendar.df_assignments["ending_date"].values
         global_starting_date = crop_calendar.global_starting_date
         crop_types = crop_calendar.df_assignments["crop_type"].values
 
         def filter_func(i: int, j: int) -> bool:
             return (
                 (global_starting_date <= max(starting_dates[i], starting_dates[j]))
-                and (crop_types[i], crop_types[j]) in precedences_graph.edges
-                and (precedences_graph.edges[crop_types[i], crop_types[j]]["weight"] <= 0)
+                and (i, j) in precedences_graph.edges
+                and (precedences_graph.edges[i, j]["precedence_effect_duration"].days < 0)
                 and (
-                    starting_dates[i]
-                    - datetime.timedelta(
-                        weeks=precedences_graph.edges[crop_types[i], crop_types[j]]["weight"]
-                    )
+                    ending_dates[i]
+                    - precedences_graph.edges[
+                        i,
+                        j
+                    ]["precedence_effect_duration"]
                     >= starting_dates[j]
                 )
             )
