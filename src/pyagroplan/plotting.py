@@ -7,7 +7,6 @@ if TYPE_CHECKING:
 
     from .beds_data import BedsData
     from .crop_calendar import CropCalendar
-    from .crops_data import CropsData
     from .solution import Solution
 
 import datetime
@@ -151,31 +150,6 @@ def plot_beds_adjacency_graph(
     return ax
 
 
-def plot_interactions_graph(
-    crops_data: CropsData,
-    ax: Optional[plt.Axes] = None,
-) -> plt.Axes:
-    if not ax:
-        fig = plt.figure()
-        ax = fig.gca()
-
-    interactions_graph = crops_data.get_interactions_graph()
-    nx.draw_networkx(
-        interactions_graph,
-        nx.circular_layout(interactions_graph),
-        ax=ax,
-        with_labels=True,
-        edge_color=list(e[-1] for e in interactions_graph.edges.data("weight")),
-        edge_cmap=colormaps["RdYlGn"],
-        edge_vmin=-1,
-        edge_vmax=1,
-        width=4,
-    )
-    ax.axis("off")
-
-    return ax
-
-
 def plot_solution(
     solution: Solution,
     beds_data: BedsData,
@@ -192,17 +166,12 @@ def plot_solution(
     if colors == "auto":
         colors = get_crops_colors_by_botanical_family(solution.crop_calendar)
 
-    import networkx as nx
-    beds_adjacency_graph = beds_data.get_adjacency_graph("garden_neighbors")
-    plots_data = [
-        (list(cc)[0], len(cc)) for cc in nx.connected_components(beds_adjacency_graph)
-    ]
-    plots, sizes = list(zip(*plots_data))
+    sizes = beds_data.df_beds_data["metadata"]["garden"].value_counts(sort=False).values
 
     df_solution = solution.crops_planning
     first_date = df_solution["starting_date"].min()
     last_date = df_solution["ending_date"].max()
-    n_beds = sum(sizes)
+    n_beds = beds_data.n_beds
 
     for i, vals in df_solution.iterrows():
         p = patches.Rectangle(
@@ -258,7 +227,7 @@ def plot_solution(
         ax.text(
             first_date,
             gardens_limits[i:i+2].mean(),
-            garden_name,
+            "garden " + garden_name,
             horizontalalignment="center",
             verticalalignment="center",
             rotation=90,
