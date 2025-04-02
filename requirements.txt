@@ -1,5 +1,0 @@
-matplotlib
-networkx
-numpy
-pandas
-pychoco==0.2.1

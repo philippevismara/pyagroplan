@@ -6,9 +6,9 @@
 ## Installation
 
 The software has been tested for Python versions >= 3.10.
-The dependecies can be installed using `pip`,
+The package and its dependencies can be installed using `pip`:
 ```script
-pip install -r requirements.txt
+pip install .
 ```
 
 
