@@ -128,10 +128,10 @@ class LocationConstraint(Constraint):
     def check_solution(self, solution: Solution) -> tuple[bool, list]:
         violated_constraints = []
 
-        on = list(solution.crops_planning.columns.difference(["assignment"]))
+        on = list(solution.future_crops_planning.columns.difference(["assignment"]))
         df = pd.merge(
-            solution.crops_planning,
-            solution.crop_calendar.df_assignments,
+            solution.future_crops_planning,
+            solution.crop_calendar.df_future_assignments,
             on=on,
         )
 
