@@ -276,6 +276,7 @@ class SuccessionConstraintWithReinitialisation(Constraint):
         crop_calendar: CropCalendar,
         temporal_adjacency_graph: nx.Graph,
         forbidden: bool,
+        implementation: str="hybrid_tables",
     ):
         self.crop_calendar = crop_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
@@ -285,10 +286,28 @@ class SuccessionConstraintWithReinitialisation(Constraint):
         assert all(
             starting_dates[i] <= starting_dates[i + 1]
             for i in range(len(starting_dates) - 1)
-        )
+        ), "Assignments in crop calendar should be sorted by increasing starting dates"
         self.starting_dates = starting_dates
 
+        build_funcs = {
+            "logical_operations": self._build_logical_operations,
+            "hybrid_tables": self._build_hybrid_tables,
+        }
+        if implementation not in build_funcs.keys():
+            raise ValueError(
+                f"'implementation' must take one of the following values: {list(build_funcs.keys())}"
+            )
+        self._build_func = build_funcs[implementation]
+
+
     def build(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
+        return self._build_func(model, assignment_vars)
+
+    def _build_logical_operations(
         self,
         model: Model,
         assignment_vars: Sequence[IntVar],
@@ -318,6 +337,53 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                                         for k in candidates_ind
                                     )
                                 ),
+                            )
+                        )
+                else:
+                    raise NotImplementedError()
+
+        return constraints
+
+    def _build_hybrid_tables(
+        self,
+        model: Model,
+        assignment_vars: Sequence[IntVar],
+    ) -> Sequence[ChocoConstraint]:
+        constraints = []
+
+        for i in self.temporal_adjacency_graph:
+            for j in self.temporal_adjacency_graph[i]:
+                if i > j:
+                    continue
+
+                if self.forbidden:
+                    if i + 1 == j:
+                        constraints.append(
+                            assignment_vars[i] != assignment_vars[j]
+                        )
+                    else:
+                        seq_size = (j+1)-i
+                        assignment_vars_seq = assignment_vars[i:j+1]
+
+                        from pychoco.constraints.extension.hybrid import supportable
+
+                        # Case where crop_i and crop_j are assigned to different beds
+                        tuples_neq = [supportable.any_val() for _ in range(seq_size-1)]
+                        tuples_neq += [supportable.ne(supportable.col(0))]
+
+                        # Cases where crop_i and crop_j are assigned to the same beds (and thus, there exists a crop_k in-between on the same bed)
+                        tuples_eq_list = [
+                            [supportable.any_val() for _ in range(k)]
+                            + [supportable.eq(supportable.col(0))]
+                            + [supportable.any_val() for _ in range(seq_size-2-k)]
+                            + [supportable.eq(supportable.col(0))]
+                            for k in range(1, seq_size-1)
+                        ]
+
+                        constraints.append(
+                            model.hybrid_table(
+                                assignment_vars_seq,
+                                [tuples_neq] + tuples_eq_list,
                             )
                         )
                 else:
