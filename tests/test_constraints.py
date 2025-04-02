@@ -4,10 +4,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.constraints import constraints as cstrs
-from src.model import AgroEcoPlanModel
-from src.beds_data import BedsData
-from src.crop_calendar import CropCalendar
+from pyagroplan.constraints import constraints as cstrs
+from pyagroplan.model import AgroEcoPlanModel
+from pyagroplan.beds_data import BedsData
+from pyagroplan.crop_calendar import CropCalendar
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()

@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from src.model import AgroEcoPlanModel
-from src.beds_data import BedsData
-from src.crop_calendar import CropCalendar
-from src.past_crop_plan import PastCropPlan
+from pyagroplan.model import AgroEcoPlanModel
+from pyagroplan.beds_data import BedsData
+from pyagroplan.crop_calendar import CropCalendar
+from pyagroplan.past_crop_plan import PastCropPlan
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()

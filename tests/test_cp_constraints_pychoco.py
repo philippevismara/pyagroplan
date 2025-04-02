@@ -1,11 +1,11 @@
 import pytest
 from pathlib import Path
 
-from src.constraints import cp_constraints_pychoco as cstrs
-from src.constraints import constraints as cstrs2
-from src.beds_data import BedsData
-from src.crop_calendar import CropCalendar
-from src.solution import Solution
+from pyagroplan.constraints import cp_constraints_pychoco as cstrs
+from pyagroplan.constraints import constraints as cstrs2
+from pyagroplan.beds_data import BedsData
+from pyagroplan.crop_calendar import CropCalendar
+from pyagroplan.solution import Solution
 
 
 

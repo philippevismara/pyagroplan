@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from src.crop_calendar import CropCalendar
+from pyagroplan.crop_calendar import CropCalendar
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 DATA_PATH = CURRENT_DIR / "data"

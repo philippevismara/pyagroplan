@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.exceptions import IntervalError
-from src.past_crop_plan import PastCropPlan
+from pyagroplan.exceptions import IntervalError
+from pyagroplan.past_crop_plan import PastCropPlan
 
 
 def test_past_crop_plan():
