@@ -254,8 +254,6 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
 
 
     def parse_rule(self, **kwargs: Any) -> Callable:
-        # TODO adjacency_type
-
         default_value = ""
         type = kwargs["type"]
         if type == "forbidden":
@@ -267,7 +265,7 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
                 f"Spatial interaction constraint type must be either "
                 f"'forbidden' or 'enforced', given {type}."
             )
-        value = kwargs["intervals_overlap"]
+        value = kwargs.get("intervals_overlap", "[1,-1][1,-1]")
         #value = self.parse_value_str(kwargs["intervals_overlap"])
         value = type + value
 
