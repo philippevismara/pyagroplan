@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from pychoco.variables.boolvar import BoolVar
     from pychoco.variables.intvar import IntVar
 
-    from ..beds_data import BedsData
-    from ..crop_calendar import CropCalendar
+    from .. import CropPlanProblemData, Solution
+    from ..data.beds_data import BedsData
+    from ..data.crop_calendar import CropCalendar
     from ..model import Model
-    from ..solution import Solution
 
 from abc import ABC, abstractmethod
 
@@ -75,8 +75,7 @@ class LocationConstraint(Constraint):
 
     Parameters
     ----------
-    crop_calendar : CropCalendar
-    beds_data : BedsData
+    crop_plan_problem_data : CropPlanProblemData
     beds_selection_func : Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]]
         Filtering function taking a single crop data and generating the list of beds the contraint applies on.
     forbidden : bool
@@ -85,15 +84,14 @@ class LocationConstraint(Constraint):
 
     def __init__(
         self,
-        crop_calendar: CropCalendar,
-        beds_data: BedsData,
+        crop_plan_problem_data: CropPlanProblemData,
         beds_selection_func: Callable[
             [pd.Series, BedsData], Sequence[int] | Sequence[bool]
         ],
         forbidden: bool = False,
     ):
-        self.crop_calendar = crop_calendar
-        self.beds_data = beds_data
+        self.crop_calendar = crop_plan_problem_data.crop_calendar
+        self.beds_data = crop_plan_problem_data.beds_data
         self.beds_selection_func = beds_selection_func
         self.forbidden = forbidden
 
@@ -131,7 +129,7 @@ class LocationConstraint(Constraint):
         on = list(solution.future_crops_planning.columns.difference(["assignment"]))
         df = pd.merge(
             solution.future_crops_planning,
-            solution.crop_calendar.df_future_assignments,
+            solution.crop_plan_problem_data.crop_calendar.df_future_assignments,
             on=on,
         )
 
@@ -487,7 +485,6 @@ class BinaryNeighbourhoodConstraint(Constraint):
                     violated_constraints.append([a_i, a_j])
 
         return (len(violated_constraints) == 0), violated_constraints
-
 
 
 class GroupNeighbourhoodConstraint(Constraint):

@@ -11,8 +11,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from .utils.interval_graph import interval_graph
-from ._typing import FilePath
+from ..utils.interval_graph import interval_graph
+from .._typing import FilePath
 
 
 def _build_assignments_dataframe(
@@ -178,9 +178,13 @@ class CropCalendar:
         )
 
     def __str__(self) -> str:
-        return "CropsCalendar(n_crops={}, n_assignments={})".format(
-            len(self.df_crop_calendar),
-            self.n_assignments,
+        return (
+            f"CropsCalendar("
+            f"n_crops={len(self.df_crop_calendar)}, "
+            f"n_assignments={self.n_assignments}, "
+            f"n_future_crops={len(self.df_future_crop_calendar)}, "
+            f"n_future_assignments={self.n_future_assignments}"
+            f")"
         )
 
     def is_overlapping_cultures(self, crops_ids: Sequence[int]) -> bool:

@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 from collections.abc import Sequence
 
-from ._typing import FilePath
+from .._typing import FilePath
 
 
 class BedsData:

@@ -2,10 +2,7 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from pyagroplan.model import AgroEcoPlanModel
-from pyagroplan.beds_data import BedsData
-from pyagroplan.crop_calendar import CropCalendar
-from pyagroplan.past_crop_plan import PastCropPlan
+from pyagroplan import AgroEcoPlanModel, CropPlanProblemData
 
 
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -13,40 +10,26 @@ DATA_PATH = CURRENT_DIR / "data"
 
 
 @pytest.fixture
-def beds_data(beds_data_csv_filename):
-    return BedsData(DATA_PATH / beds_data_csv_filename)
-
-
-@pytest.fixture
 def with_past_crop_plan():
     return False
 
-
 @pytest.fixture
-def crop_calendar(with_past_crop_plan):
+def crop_plan_problem_data(with_past_crop_plan):
     past_crop_plan = None
     if with_past_crop_plan:
-        past_crop_plan = PastCropPlan(DATA_PATH / "past_crop_plan.csv")
+        past_crop_plan = DATA_PATH / "past_crop_plan.csv"
 
-    return CropCalendar(
-        DATA_PATH / "crop_calendar.csv",
+    return CropPlanProblemData(
+        beds_data=DATA_PATH / "beds_data_normal.csv",
+        future_crop_calendar=DATA_PATH / "crop_calendar.csv",
         past_crop_plan=past_crop_plan,
     )
 
 
-@pytest.mark.parametrize("beds_data_csv_filename", ["beds_data.csv"])
-def test_agroecoplanmodel_no_constraints_no_solution(crop_calendar, beds_data):
-    with pytest.raises(ValueError) as excinfo:
-        AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
-
-    assert "not enough beds available" in str(excinfo.value)
-
-
-@pytest.mark.parametrize("beds_data_csv_filename", ["beds_data_normal.csv"])
-def test_agroecoplanmodel_no_constraints_with_solution(crop_calendar, beds_data):
+def test_agroecoplanmodel_no_constraints_with_solution(crop_plan_problem_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
     assert model.n_assignments == (0+8)
     assert len(model.past_crop_plan_vars) == 0
@@ -65,12 +48,11 @@ def test_agroecoplanmodel_no_constraints_with_solution(crop_calendar, beds_data)
         assert len(np.intersect1d(crops_planning[5:6], crops_planning[6:7])) == 0
 
 
-@pytest.mark.parametrize("beds_data_csv_filename", ["beds_data_normal.csv"])
 @pytest.mark.parametrize("with_past_crop_plan", [True])
-def test_agroecoplanmodel_with_past_crop_plan_no_constraints_with_solution(crop_calendar, beds_data):
+def test_agroecoplanmodel_with_past_crop_plan_no_constraints_with_solution(crop_plan_problem_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_calendar, beds_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
     assert model.n_assignments == (7+8)
     assert len(model.past_crop_plan_vars) == 7

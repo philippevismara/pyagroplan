@@ -5,8 +5,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection
     from typing import Any, Optional
 
-    from .beds_data import BedsData
-    from .crop_calendar import CropCalendar
+    from .data import BedsData, CropCalendar
     from .solution import Solution
 
 import datetime
@@ -152,7 +151,6 @@ def plot_beds_adjacency_graph(
 
 def plot_solution(
     solution: Solution,
-    beds_data: BedsData,
     colors: Optional[dict | str] = "auto",
     ax: Optional[plt.Axes] = None,
 ) -> plt.Axes:
@@ -160,11 +158,14 @@ def plot_solution(
         fig = plt.figure(figsize=(5, 5))
         ax = fig.gca()
 
+    beds_data = solution.crop_plan_problem_data.beds_data
+    crop_calendar = solution.crop_plan_problem_data.crop_calendar
+
     from collections import defaultdict
 
     colors = colors if colors is not None else defaultdict()
     if colors == "auto":
-        colors = get_crops_colors_by_botanical_family(solution.crop_calendar)
+        colors = get_crops_colors_by_botanical_family(crop_calendar)
 
     sizes = beds_data.df_beds_data["metadata"]["garden"].value_counts(sort=False).values
 

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from pyagroplan.exceptions import IntervalError
-from pyagroplan.past_crop_plan import PastCropPlan
+from pyagroplan.data import PastCropPlan
 
 
 def test_past_crop_plan():

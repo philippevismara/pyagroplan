@@ -5,10 +5,9 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from .crop_calendar import CropCalendar
+    from . import CropPlanProblemData
 
 import numpy as np
-import pandas as pd
 
 
 class Solution:
@@ -16,27 +15,33 @@ class Solution:
 
     Attributes
     ----------
-    crop_calendar : CropsCalendar
-        Crops calendar used in the model.
+    crop_plan_problem_data : CropPlanProblemData
+        Crops calendar and beds data used in the model.
     assignments : Sequence[int]
         Assignments of crops to beds.
 
     Parameters
     ----------
-    crop_calendar : CropsCalendar
-        Crops calendar used in the model.
+    crop_plan_problem_data : CropPlanProblemData
+        Crops calendar and beds data used in the model.
     assignments : Sequence[int]
         Assignments of crops to beds.
     """
 
-    def __init__(self, crop_calendar: CropCalendar, assignments: Sequence[int]):
+    def __init__(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        assignments: Sequence[int],
+    ):
+        crop_calendar = crop_plan_problem_data.crop_calendar
+
         crops_planning = crop_calendar.df_assignments[[
             "crop_id", "crop_name", "starting_date", "ending_date"
         ]].copy()
         crops_planning["assignment"] = np.asarray(assignments, dtype=int)
         crops_planning.sort_index(inplace=True)
 
-        self.crop_calendar = crop_calendar
+        self.crop_plan_problem_data = crop_plan_problem_data
         self.assignments = assignments
         self.crops_planning = crops_planning
         self.past_crops_planning = crops_planning.iloc[:-crop_calendar.n_future_assignments]

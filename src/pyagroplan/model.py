@@ -3,12 +3,11 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import Callable, Generator
+    from typing import Any, Callable, Generator
 
     from pychoco.variables import IntVar
 
-    from .beds_data import BedsData
-    from .crop_calendar import CropCalendar
+    from .data.beds_data import BedsData
     from .solution import Solution
 
 import numpy as np
@@ -17,6 +16,7 @@ from pychoco.solver import Solver as ChocoSolver
 from pychoco.variables.boolvar import BoolVar
 from pychoco.constraints.cnf.log_op import LogOp
 
+from . import CropPlanProblemData
 from .constraints.cp_constraints_pychoco import Constraint
 from .solution import Solution
 
@@ -59,10 +59,8 @@ class AgroEcoPlanModel:
 
     Attributes
     ----------
-    crop_calendar : CropCalendar
-        `CropCalendar` used.
-    beds_data : BedsData
-        `BedsData` used.
+    crop_plan_problem_data : CropPlanProblemData
+        `CropPlanProblemData` used.
     n_assignments : int
         Number of assignments to make.
     n_beds : int
@@ -76,64 +74,58 @@ class AgroEcoPlanModel:
 
     Parameters
     ----------
-    crop_calendar : CropCalendar
-        `CropCalendar` object used to define the model.
-    beds_data : BedsData
-        `BedsData` object used to define the model.
+    crop_plan_problem_data : CropPlanProblemData
+        `CropPlanProblemData` object used to define the model.
     verbose : bool, optional
         If True, verbose output.
     """
 
     def __init__(
         self,
-        crop_calendar: CropCalendar,
-        beds_data: BedsData,
+        crop_plan_problem_data: CropPlanProblemData,
         verbose: bool = False,
     ):
-        self._check_enough_beds_for_crop_calendar(crop_calendar, beds_data)
+        beds_data = crop_plan_problem_data.beds_data
+        crop_calendar = crop_plan_problem_data.crop_calendar
 
-        self.crop_calendar = crop_calendar
-        self.beds_data = beds_data
-        self.n_assignments = self.crop_calendar.n_assignments
-        self.n_beds = self.beds_data.n_beds
-        self.verbose = verbose
-
-        self.model = Model()
-
-        self.past_crop_plan_vars = []
-        if self.crop_calendar.past_crop_plan:
-            isin = np.isin(self.crop_calendar.past_crop_plan.allocated_bed_id, self.beds_data.beds_ids)
-            if (~isin).any():
-                unknown_beds_ids = self.crop_calendar.past_crop_plan.allocated_bed_id[~isin]
-                raise ValueError(
-                    f"Inconsistency in past allocated beds ids with beds data: "
-                    f"beds with id {list(unknown_beds_ids)} not found in beds data"
-                )
-
-            self.past_crop_plan_vars = self.model.intvars(
-                self.crop_calendar.past_crop_plan.n_assignments,
-                list(self.crop_calendar.past_crop_plan.allocated_bed_id),
+        model = Model()
+        
+        past_crop_plan_vars = []
+        if crop_calendar.past_crop_plan:
+            past_crop_plan_vars = model.intvars(
+                crop_calendar.past_crop_plan.n_assignments,
+                list(crop_calendar.past_crop_plan.allocated_bed_id),
                 name="past_a",
             )
         # TODO update pychoco to avoid doing this here (creating a array of variables with same domain)
-        self.future_assignment_vars = [
-            self.model.intvar(self.beds_data.beds_ids, None, "{}_{}".format("a", i))
-            for i in range(self.crop_calendar.n_future_assignments)
+        future_assignment_vars = [
+            model.intvar(beds_data.beds_ids, None, "{}_{}".format("a", i))
+            for i in range(crop_calendar.n_future_assignments)
         ]
-        
+
+        self.crop_plan_problem_data = crop_plan_problem_data
+        self.n_assignments = crop_plan_problem_data.crop_calendar.n_assignments
+        self.n_beds = crop_plan_problem_data.beds_data.n_beds
+        self.verbose = verbose
+
+        self.model = model
+
+        self.past_crop_plan_vars = past_crop_plan_vars
+        self.future_assignment_vars = future_assignment_vars
         self.assignment_vars = np.asarray(
             self.past_crop_plan_vars
             + self.future_assignment_vars
         )
 
-        self._constraints = {}
+        self._constraints: dict[Constraint | str, Any] = {}
 
+        
     def __str__(self) -> str:
-        return "AgroEcoPlanModel(crop_calendar={}, beds_data={}, verbose={})".format(
-            self.crop_calendar,
-            self.beds_data,
+        return "AgroEcoPlanModel(crop_plan_problem_data={}, verbose={})".format(
+            self.crop_plan_problem_data,
             self.verbose,
         )
+
 
     def init(self, constraints: Sequence[Constraint]|Constraint = tuple()) -> None:
         """Initialises the model with non-overlapping assignments constraints, symmetry breaking constraints and the constraints provided as parameter.
@@ -151,6 +143,7 @@ class AgroEcoPlanModel:
 
         for constraint in constraints:
             self.add_constraint(constraint)
+
 
     def add_constraint(self, constraint: Constraint) -> None:
         """Adds a constraint to the model.
@@ -225,21 +218,7 @@ class AgroEcoPlanModel:
             raise RuntimeError("No solution found")
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
-            return Solution(self.crop_calendar, variables_values)
-
-    def _check_enough_beds_for_crop_calendar(
-        self,
-        crop_calendar: CropCalendar,
-        beds_data: BedsData,
-    ) -> None:
-        n_beds_min = max(map(len, crop_calendar.crops_overlapping_cultivation_intervals))
-        n_available_beds = len(beds_data)
-
-        if n_available_beds < n_beds_min:
-            raise ValueError(
-                f"Inconsistency: not enough beds available "
-                f"({n_available_beds} beds available, {n_beds_min} needed)"
-            )
+            return Solution(self.crop_plan_problem_data, variables_values)
 
     def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:
         """Extracts the instantiated values of the variables.
@@ -275,7 +254,7 @@ class AgroEcoPlanModel:
         """Adds non-overlapping assignments constraints as part of the basic model definition."""
         constraints = []
 
-        for overlapping_crops in self.crop_calendar.crops_overlapping_cultivation_intervals:
+        for overlapping_crops in self.crop_plan_problem_data.crop_calendar.crops_overlapping_cultivation_intervals:
             overlapping_assignment_vars = self.assignment_vars[list(overlapping_crops)]
 
             constraint = self.model.all_different(overlapping_assignment_vars)
@@ -294,7 +273,7 @@ class AgroEcoPlanModel:
         """
         constraints = []
 
-        for group in self.crop_calendar.crops_groups_assignments:
+        for group in self.crop_plan_problem_data.crop_calendar.crops_groups_assignments:
             assert len(group) > 0
             if len(group) > 1:
                 group_vars = self.assignment_vars[group]

@@ -9,7 +9,7 @@ import warnings
 
 import pandas as pd
 
-from .._typing import FilePath
+from ..._typing import FilePath
 
 
 def convert_string_to_int_list(s: str) -> tuple[int, ...]:

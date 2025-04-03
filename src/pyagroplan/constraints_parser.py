@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
 
-    from .crop_calendar import CropCalendar
+    from . import CropPlanProblemData
     from .constraints.cp_constraints_pychoco import Constraint
 
 import warnings
@@ -35,7 +35,7 @@ class ConstraintDefinitionsParser(ABC):
     @abstractmethod
     def build_constraint_from_definition_dict(
         self,
-        crop_calendar: CropCalendar,
+        crop_plan_problem_data: CropPlanProblemData,
         def_dict: dict,
         name: Optional[str]=None,
         *args: Any,
@@ -45,14 +45,14 @@ class ConstraintDefinitionsParser(ABC):
 
     def build_constraints_from_definition_dict(
         self,
-        crop_calendar: CropCalendar,
+        crop_plan_problem_data: CropPlanProblemData,
         def_dict: dict,
         *args: Any,
         **kwargs: Any,
     ) -> dict[str, Constraint]:
         return {
             constraint_name: self.build_constraint_from_definition_dict(
-                crop_calendar,
+                crop_plan_problem_data,
                 definition,
                 constraint_name,
                 *args,
@@ -161,21 +161,21 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
 
     def build_constraint_from_definition_dict(
         self,
-        crop_calendar: CropCalendar,
+        crop_plan_problem_data: CropPlanProblemData,
         def_dict: dict,
         name: Optional[str]=None,
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
         matrix = self.build_matrix_from_definition_dict(
-            crop_calendar.df_assignments,
+            crop_plan_problem_data.crop_calendar.df_assignments,
             def_dict,
             name=name,
         )
 
         if def_dict["type"] == "forbidden":
             return cstrs.ForbidNegativePrecedencesConstraint(
-                crop_calendar,
+                crop_plan_problem_data,
                 matrix,
                 *args,
                 **kwargs,
@@ -280,21 +280,21 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
 
     def build_constraint_from_definition_dict(
         self,
-        crop_calendar: CropCalendar,
+        crop_plan_problem_data: CropPlanProblemData,
         def_dict: dict,
         name: Optional[str]=None,
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
         matrix = self.build_matrix_from_definition_dict(
-            crop_calendar.df_assignments,
+            crop_plan_problem_data.crop_calendar.df_assignments,
             def_dict,
             name=name,
         )
 
         if def_dict["type"] == "forbidden":
             return cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
-                crop_calendar,
+                crop_plan_problem_data,
                 matrix,
                 *args,
                 adjacency_name=def_dict["adjacency_type"],

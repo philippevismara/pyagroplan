@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from ._typing import FilePath
+from .._typing import FilePath
 
 
 class PastCropPlan:
@@ -83,7 +83,7 @@ class PastCropPlan:
 
     def _check_consistency(self) -> None:
         cropping_intervals = self.df_past_assignments.loc[:, ["starting_date", "ending_date"]]
-        from .utils.interval_graph import get_intervals_as_list_of_intervals
+        from ..utils.interval_graph import get_intervals_as_list_of_intervals
         get_intervals_as_list_of_intervals(cropping_intervals)
 
         assignments = self.allocated_bed_id
