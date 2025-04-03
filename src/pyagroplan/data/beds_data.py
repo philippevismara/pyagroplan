@@ -38,6 +38,8 @@ class BedsData:
 
         self._check_df_beds_data(df_beds_data)
 
+        self._df_beds_data = df_beds_data.copy()
+        df_beds_data.columns = df_beds_data.columns.droplevel(0)
         self.df_beds_data = df_beds_data
 
     @property
@@ -46,11 +48,11 @@ class BedsData:
 
     @property
     def beds_ids(self) -> list:
-        return self.df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
+        return self._df_beds_data["metadata"]["bed_id"].to_numpy().tolist()
 
     @property
     def adjacency_lists(self) -> pd.DataFrame:
-        return self.df_beds_data["adjacent_beds"]
+        return self._df_beds_data["adjacent_beds"]
 
     def __str__(self) -> str:
         return """BedsData(n_beds={})""".format(self.n_beds)

@@ -177,7 +177,7 @@ def test_crops_location_constraint(crop_plan_problem_data):
     model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
     def beds_selection_func(crop_data, beds_data):
-        df_beds_attributes = beds_data.df_beds_data.attributes
+        df_beds_attributes = beds_data._df_beds_data.attributes
         beds_ids = np.asarray(beds_data.beds_ids)
 
         match crop_data["besoin_lumiere"]:

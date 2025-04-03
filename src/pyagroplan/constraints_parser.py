@@ -11,6 +11,7 @@ import warnings
 from abc import ABC, abstractmethod
 import datetime
 
+import numpy as np
 import pandas as pd
 
 from ._typing import FilePath
@@ -115,7 +116,7 @@ class ConstraintDefinitionsParser(ABC):
         return df_matrix
 
 
-class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
+class LocationConstraintDefinitionsParser(ConstraintDefinitionsParser):
     def parse_rule_str(
         self,
         rule_str: str,
@@ -146,6 +147,91 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         else:
             raise ValueError(
                 f"Precedence interaction constraint type must be either "
+                f"'forbidden' or 'enforced', given {type}."
+            )
+
+        default_value = datetime.timedelta(days=0)
+        #precendence_effect_delay = kwargs["precedence_effect_delay"]
+        #value = eval(f"datetime.timedelta({precendence_effect_delay})")
+        value = datetime.timedelta(weeks=int(type + kwargs["precedence_effect_delay_in_weeks"]))
+
+        rule_str = kwargs["rule"]
+
+        rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
+        return rule
+
+    def build_constraint_from_definition_dict(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        type = def_dict["type"]
+        if type == "forbidden":
+            forbidden = True
+        elif type == "enforced":
+            forbidden = False
+        else:
+            raise ValueError(
+                f"Location constraint type must be either "
+                f"'forbidden' or 'enforced', given {type}."
+            )
+
+        beds_selection_rule = def_dict["beds_selection_rule"]
+        beds_selection_rule = beds_selection_rule.replace("\n", "")
+        crops_selection_rule = def_dict["crops_selection_rule"]
+        crops_selection_rule = crops_selection_rule.replace("\n", "")
+
+        df_beds = crop_plan_problem_data.beds_data.df_beds_data
+        def beds_selection_func(crop, beds_data):
+            bed = beds_data.df_beds_data
+            if eval(crops_selection_rule):
+                return df_beds["bed_id"][np.where(
+                    eval(beds_selection_rule)
+                )[0]].values
+
+            return []
+
+        return cstrs.LocationConstraint(
+            crop_plan_problem_data,
+            beds_selection_func,
+            forbidden=forbidden,
+        )
+
+
+class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
+    def parse_rule_str(
+        self,
+        rule_str: str,
+        value: Any,
+        default_value: Any,
+        **kwargs: Any,
+    ) -> Callable:
+        rule_str = rule_str.strip()
+
+        rule_str = rule_str.replace("preceding_crop", "row_data")
+        rule_str = rule_str.replace("following_crop", "df_data")
+
+        def rule_func(row_data, df_data):
+            res = pd.Series(index=df_data.index, dtype=object)
+            res[:] = default_value
+            ind = eval(rule_str)
+            res[ind] = value
+            return res
+
+        return rule_func
+
+    def parse_rule(self, **kwargs: Any) -> Callable:
+        type = kwargs["type"]
+        if type == "forbidden":
+            type = "-"
+        elif type == "enforced":
+            type = "+"
+        else:
+            raise ValueError(
+                f"Precedence constraint type must be either "
                 f"'forbidden' or 'enforced', given {type}."
             )
 

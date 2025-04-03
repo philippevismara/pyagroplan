@@ -167,7 +167,7 @@ def plot_solution(
     if colors == "auto":
         colors = get_crops_colors_by_botanical_family(crop_calendar)
 
-    sizes = beds_data.df_beds_data["metadata"]["garden"].value_counts(sort=False).values
+    sizes = beds_data.df_beds_data["garden"].value_counts(sort=False).values
 
     df_solution = solution.crops_planning
     first_date = df_solution["starting_date"].min()
@@ -223,7 +223,7 @@ def plot_solution(
         lw=3,
         colors="black",
     )
-    garden_names = beds_data.df_beds_data["metadata"]["garden"].unique()
+    garden_names = beds_data.df_beds_data["garden"].unique()
     for i, garden_name in enumerate(garden_names):
         ax.text(
             first_date,
