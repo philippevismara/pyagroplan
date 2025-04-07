@@ -18,65 +18,28 @@ from .cp_constraints_pychoco import (
     LocationConstraint,
 )
 from ..utils.utils import timedelta_dataframe_to_directed_graph
+from .._typing import FilePath
 
 
-class FamilyCropsRotationConstraint(SuccessionConstraint):
-    """Enforces crops rotation based on a return delay for each botanical family.
-
-    Parameters
-    ----------
-    crop_plan_problem_data : CropPlanProblemData
-    """
-
-    def __init__(self, crop_plan_problem_data: CropPlanProblemData):
-        """
-        TODO if the interval graph with rotations is chordal, allDifferent for all maximal cliques,
-            and separators should be sufficient, but we should prove it to be sure.
-        """
-        crop_calendar = crop_plan_problem_data.crop_calendar
-
-        # TODO get return delays with units from the start
-        import pandas as pd
-        return_delays = crop_calendar.df_assignments["return_delay"].values
-        return_delays = pd.to_timedelta(return_delays, unit="W")
-
-        families = crop_calendar.df_assignments["crop_family"].values
-
-        intervals = crop_calendar.cropping_intervals.copy()
-        intervals["ending_date"] = (pd.to_datetime(intervals.ending_date) + return_delays).dt.date
-        is_future_crop = crop_calendar.df_assignments["is_future_crop"].values
-
-        def filter_func(i: int, j: int) -> bool:
-            return (
-                (is_future_crop[i] or is_future_crop[j])
-                and (families[i] == families[j])
-            )
-        
-        from ..utils.interval_graph import interval_graph
-        temporal_adjacency_graph = interval_graph(
-            intervals,
-            filter_func=filter_func,
-            node_ids=list(intervals.index),
-        )
-
-        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
-
-
-class CropTypesRotationConstraint(SuccessionConstraint):
-    """Enforces crops rotation based on a return delay matrix between crop types.
+class ReturnDelaysConstraint(SuccessionConstraint):
+    """Enforces crops return delays constraint.
 
     Parameters
     ----------
     crop_plan_problem_data : CropPlanProblemData
-    return_delays : pd.DataFrame
+    return_delays : pd.DataFrame | str
         Matrix containing the return delays, an entry i,j corresponds to a return delay applied after a crop of type j (precedent crop) on crops of type i (following crop).
     """
 
     def __init__(
         self,
         crop_plan_problem_data: CropPlanProblemData,
-        return_delays: pd.DataFrame,
+        return_delays: pd.DataFrame | FilePath,
     ):
+        if isinstance(return_delays, FilePath):
+            from ..data.data_loaders import CSVReturnDelaysLoader
+            return_delays = CSVReturnDelaysLoader.load(return_delays)
+
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         # TODO check return delays is in type timedelta

@@ -40,7 +40,7 @@ def test_succession_constraint_solution_checking(crop_plan_problem_data):
     import datetime
     df_return_delays = df_return_delays.map(lambda i: datetime.timedelta(weeks=i))
 
-    constraint = cstrs2.CropTypesRotationConstraint(
+    constraint = cstrs2.ReturnDelaysConstraint(
         crop_plan_problem_data,
         df_return_delays,
     )

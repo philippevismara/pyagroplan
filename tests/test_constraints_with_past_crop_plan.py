@@ -110,24 +110,7 @@ def test_dilute_family_constraint(crop_plan_problem_data):
         assert constraint.check_solution(solution)[0]
 
 
-def test_family_crops_rotation_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
-
-    constraint = cstrs.FamilyCropsRotationConstraint(
-        crop_plan_problem_data
-    )
-    model.init([constraint])
-    model.configure_solver()
-    solutions = list(model.iterate_over_all_solutions())
-
-    assert len(solutions) == 0
-    #assert len(solutions) > 0
-
-    for solution in solutions:
-        assert constraint.check_solution(solution)[0]
-
-
-def test_crop_types_rotation_constraint(crop_plan_problem_data):
+def test_return_delays_constraint(crop_plan_problem_data):
     import pandas as pd
     df_return_delays = pd.DataFrame(
         [
@@ -143,7 +126,7 @@ def test_crop_types_rotation_constraint(crop_plan_problem_data):
 
     model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
-    constraint = cstrs.CropTypesRotationConstraint(
+    constraint = cstrs.ReturnDelaysConstraint(
         crop_plan_problem_data,
         df_return_delays,
     )
