@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from typing import Callable
 
     import pandas as pd
 
@@ -19,6 +20,28 @@ from .cp_constraints_pychoco import (
 )
 from ..utils.utils import timedelta_dataframe_to_directed_graph
 from .._typing import FilePath
+
+
+class CompatibleBedsConstraint(LocationConstraint):
+    """Defines beds that are compatible or incompatible with some crops.
+
+    Parameters
+    ----------
+    crop_plan_problem_data : CropPlanProblemData
+    beds_selection_func : Callable[[pd.Series, BedsData], Sequence[int] | Sequence[bool]]
+        Filtering function taking a single crop data and generating the list of beds the contraint applies on.
+    forbidden : bool
+    """
+
+    def __init__(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        beds_selection_func: Callable[
+            [pd.Series, BedsData], Sequence[int] | Sequence[bool]
+        ],
+        forbidden: bool = False,
+    ):
+        super().__init__(crop_plan_problem_data, beds_selection_func, forbidden=forbidden)
 
 
 class ReturnDelaysConstraint(SuccessionConstraint):

@@ -116,7 +116,7 @@ class ConstraintDefinitionsParser(ABC):
         return df_matrix
 
 
-class LocationConstraintDefinitionsParser(ConstraintDefinitionsParser):
+class CompatibleBedsConstraintDefinitionsParser(ConstraintDefinitionsParser):
     def parse_rule_str(
         self,
         rule_str: str,
