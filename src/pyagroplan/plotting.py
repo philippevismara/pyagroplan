@@ -106,6 +106,7 @@ def plot_crop_calendar(
     ax.set_xlim(first_date, last_date)
     ax.set_ylim(0, n_crops_total)
     ax.invert_yaxis()
+    ax.get_yaxis().set_visible(False)
 
     ax.grid(axis="x", which="major", ls="-", color="black")
     ax.grid(axis="x", which="minor", ls="-", alpha=0.5)
