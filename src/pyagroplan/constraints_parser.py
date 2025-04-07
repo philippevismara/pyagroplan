@@ -18,6 +18,14 @@ from ._typing import FilePath
 from .constraints import constraints as cstrs
 
 
+def _preprocess_evaluated_str(eval_str: str) -> str:
+    import textwrap
+    eval_str = textwrap.dedent(eval_str)
+    eval_str = eval_str.replace("\n", " ")
+    eval_str = eval_str.strip()
+    return eval_str
+
+
 class ConstraintDefinitionsParser(ABC):
     @abstractmethod
     def parse_rule_str(
@@ -124,16 +132,17 @@ class CompatibleBedsConstraintDefinitionsParser(ConstraintDefinitionsParser):
         default_value: Any,
         **kwargs: Any,
     ) -> Callable:
-        rule_str = rule_str.strip()
-
-        rule_str = rule_str.replace("preceding_crop", "row_data")
-        rule_str = rule_str.replace("following_crop", "df_data")
+        rule_str = _preprocess_evaluated_str(rule_str)
 
         def rule_func(row_data, df_data):
+            preceding_crop = row_data
+            following_crop = df_data
+
             res = pd.Series(index=df_data.index, dtype=object)
             res[:] = default_value
             ind = eval(rule_str)
             res[ind] = value
+
             return res
 
         return rule_func
@@ -180,9 +189,9 @@ class CompatibleBedsConstraintDefinitionsParser(ConstraintDefinitionsParser):
             )
 
         beds_selection_rule = def_dict["beds_selection_rule"]
-        beds_selection_rule = beds_selection_rule.replace("\n", "")
+        beds_selection_rule = _preprocess_evaluated_str(beds_selection_rule)
         crops_selection_rule = def_dict["crops_selection_rule"]
-        crops_selection_rule = crops_selection_rule.replace("\n", "")
+        crops_selection_rule = _preprocess_evaluated_str(crops_selection_rule)
 
         df_beds = crop_plan_problem_data.beds_data.df_beds_data
         def beds_selection_func(crop, beds_data):
@@ -209,12 +218,12 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         default_value: Any,
         **kwargs: Any,
     ) -> Callable:
-        rule_str = rule_str.strip()
-
-        rule_str = rule_str.replace("preceding_crop", "row_data")
-        rule_str = rule_str.replace("following_crop", "df_data")
+        rule_str = _preprocess_evaluated_str(rule_str)
 
         def rule_func(row_data, df_data):
+            preceding_crop = row_data
+            following_crop = df_data
+
             res = pd.Series(index=df_data.index, dtype=object)
             res[:] = default_value
             ind = eval(rule_str)
@@ -278,13 +287,12 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         default_value: Any,
         **kwargs: Any,
     ) -> Callable:
-        rule_str = rule_str.strip()
-
-        rule_str = rule_str.replace("crop1", "row_data")
-        rule_str = rule_str.replace("crop2", "df_data")
-        rule_str = rule_str.replace("\n", "")
+        rule_str = _preprocess_evaluated_str(rule_str)
 
         def rule_func(row_data, df_data):
+            crop1 = row_data
+            crop2 = df_data
+
             res = pd.Series(index=df_data.index, dtype=str)
             res[:] = default_value
             ind = eval(rule_str)
@@ -295,11 +303,10 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
 
     def parse_value_str(self, value_str: str, row_data: pd.Series, df_data: pd.DataFrame) -> str:
         # [1,3][-crop2["harvesting_time"]-4,-crop2["harvesting_time"]-1]
-        value_str = value_str.strip()
+        value_str = _preprocess_evaluated_str(value_str)
 
-        value_str = value_str.replace("crop1", "row_data")
-        value_str = value_str.replace("crop2", "df_data")
-        value_str = value_str.replace("\n", "")
+        crop1 = row_data
+        crop2 = df_data
 
         import re
         int_pattern = r"[+-]?[0-9]+"
