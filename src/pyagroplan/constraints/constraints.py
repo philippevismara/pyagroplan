@@ -350,12 +350,13 @@ class DiluteFamilyConstraint(BinaryNeighbourhoodConstraint):
         return self.crops_families[i] == self.crops_families[j]  # type: ignore[no-any-return]
 
 
-class GroupIdenticalCropsTogetherConstraint(GroupNeighbourhoodConstraint):
-    """Enforces crops from same crop group to be spatially close.
+class GroupCropsConstraint(GroupNeighbourhoodConstraint):
+    """Enforces crops in the same group to be spatially close.
 
     Parameters
     ----------
     crop_plan_problem_data : CropPlanProblemData
+    crops_groups : Sequence[Sequence[int]]
     adjacency_name : string
     """
 

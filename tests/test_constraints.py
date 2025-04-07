@@ -139,10 +139,10 @@ def test_return_delays_constraint(crop_plan_problem_data):
         assert constraint.check_solution(solution)[0]
 
 
-def test_group_identical_crops_together_constraint(crop_plan_problem_data):
+def test_group_crops_constraint(crop_plan_problem_data):
     model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
-    constraint = cstrs.GroupIdenticalCropsTogetherConstraint(
+    constraint = cstrs.GroupCropsConstraint(
         crop_plan_problem_data,
         crop_plan_problem_data.crop_calendar.future_crops_groups_assignments,
         adjacency_name="garden_neighbors",

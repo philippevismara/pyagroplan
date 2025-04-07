@@ -393,3 +393,113 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
             )
         else:
             raise NotImplementedError()
+
+
+class ReturnDelaysConstraintParser:
+    def build_constraint_from_definition_dict(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        return cstrs.ReturnDelaysConstraint(
+            crop_plan_problem_data,
+            return_delays=def_dict["return_delays"],
+        )
+
+
+class GroupCropsConstraintDefinitionParser:
+    def groupby_crops(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        groupby: str,
+    ) -> list:
+        df_assignments = crop_plan_problem_data.crop_calendar.df_assignments
+        n_future_crops = len(crop_plan_problem_data.crop_calendar.df_future_crop_calendar)
+
+        crops_groups_assignments = list(
+            df_assignments.groupby(
+                groupby,
+                sort=False,
+            ).indices.values()
+        )
+        future_crops_groups_assignments = crops_groups_assignments[-n_future_crops:]
+        return future_crops_groups_assignments
+
+    def filter_crops_groups(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        crops_groups: list,
+        filtering_rule_str: str,
+    ) -> list:
+        filtering_rule_str = _preprocess_evaluated_str(filtering_rule_str)
+
+        # FIXME this only works with "crop_group_id"
+        crop = crop_plan_problem_data.crop_calendar.df_future_crop_calendar
+        ind = eval(filtering_rule_str)
+        
+        crops_groups = np.asarray(crops_groups, dtype=object)[ind]
+        return list(crops_groups)
+
+    def build_constraint_from_definition_dict(
+        self,
+        crop_plan_problem_data: CropPlanProblemData,
+        def_dict: dict,
+        name: Optional[str]=None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Constraint:
+        crops_groups = self.groupby_crops(
+            crop_plan_problem_data,
+            def_dict["group_by"],
+        )
+        filtered_crops_groups = self.filter_crops_groups(
+            crop_plan_problem_data,
+            crops_groups,
+            def_dict["filtering_rule"],
+        )
+
+        return cstrs.GroupCropsConstraint(
+            crop_plan_problem_data,
+            filtered_crops_groups,
+            adjacency_name=def_dict["adjacency_type"],
+        )
+
+
+_available_parsers = {
+    "precedence_constraint": PrecedenceConstraintDefinitionsParser,
+    "return_delays_constraint": ReturnDelaysConstraintParser,
+    "spatial_interactions_constraint": SpatialInteractionsConstraintDefinitionsParser,
+    "compatible_beds_constraint": CompatibleBedsConstraintDefinitionsParser,
+    "group_crops_constraint": GroupCropsConstraintDefinitionParser,
+}
+
+def load_constraints(
+    crop_plan_problem_data: CropPlanProblemData,
+    definitions_dict: dict[str, Any],
+) -> dict[str, Constraint]:
+    constraints = {}
+
+    for name, def_dict in definitions_dict.items():
+        if "constraint_type" not in def_dict:
+            raise KeyError("`constraint_type` field required in constraints definitions")
+
+        constraint_type = def_dict["constraint_type"]
+
+        if constraint_type not in _available_parsers:
+            raise ValueError(
+                f"`constraint_type` should be one of `{list(_available_parsers.keys())}` (given `{constraint_type}`)"
+            )
+
+        constraint_parser_cls = _available_parsers[constraint_type]
+        constraint = constraint_parser_cls().build_constraint_from_definition_dict(
+            crop_plan_problem_data,
+            def_dict,
+            name,
+        )
+
+        constraints[name] = constraint
+
+    return constraints
