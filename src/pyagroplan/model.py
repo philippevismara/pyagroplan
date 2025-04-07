@@ -2,15 +2,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any, Callable, Generator
+    from typing import Any, Callable, Generator, Optional
 
-    from pychoco.variables import IntVar
+    from pychoco.variables.intvar import IntVar
 
-    from .data.beds_data import BedsData
     from .solution import Solution
 
 import numpy as np
+from collections.abc import Mapping, Sequence
+
 from pychoco import Model
 from pychoco.solver import Solver as ChocoSolver
 from pychoco.variables.boolvar import BoolVar
@@ -127,7 +127,10 @@ class AgroEcoPlanModel:
         )
 
 
-    def init(self, constraints: Sequence[Constraint]|Constraint = tuple()) -> None:
+    def init(
+        self,
+        constraints: Mapping[str,Constraint]|Sequence[Constraint]|Constraint = tuple(),
+    ) -> None:
         """Initialises the model with non-overlapping assignments constraints, symmetry breaking constraints and the constraints provided as parameter.
 
         Parameters
@@ -135,17 +138,31 @@ class AgroEcoPlanModel:
         constraints :
             List of constraints to initialise the model with.
         """
-        if isinstance(constraints, Constraint):
-            constraints = [constraints]
-
         self._add_non_overlapping_assignments_constraints()
         self._break_symmetries()
 
-        for constraint in constraints:
-            self.add_constraint(constraint)
+        self.add_constraints(constraints)
+
+    def add_constraints(
+        self,
+        constraints: Mapping[str,Constraint]|Sequence[Constraint]|Constraint = tuple(),
+        name: Optional[str] = None,
+    ) -> None:
+        if isinstance(constraints, Mapping):
+            for name, constraint in constraints.items():
+                self.add_constraints(constraint, name=name)
+        elif isinstance(constraints, Sequence):
+            for constraint in constraints:
+                self.add_constraints(constraint)
+        else:
+            self.add_constraint(constraints, name=name)
 
 
-    def add_constraint(self, constraint: Constraint) -> None:
+    def add_constraint(
+        self,
+        constraint: Constraint,
+        name: Optional[str]=None,
+    ) -> None:
         """Adds a constraint to the model.
 
         Parameters
@@ -169,7 +186,10 @@ class AgroEcoPlanModel:
             else:
                 raise ValueError(f"unknown constraint type {type(cstr)}")
 
-        self._constraints[constraint] = constraints
+        if name:
+            self._constraints[name] = constraints
+        else:
+            self._constraints[constraint] = constraints
 
     def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
         raise NotImplementedError()
@@ -213,6 +233,9 @@ class AgroEcoPlanModel:
         -------
         Solution
         """
+        if not hasattr(self, "solver"):
+            self.configure_solver()
+
         has_solution = self.solver.solve(**kwargs)
         if not has_solution:
             raise RuntimeError("No solution found")
