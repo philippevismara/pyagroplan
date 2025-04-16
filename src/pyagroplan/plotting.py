@@ -13,7 +13,6 @@ from itertools import cycle
 
 import networkx as nx
 import numpy as np
-from matplotlib import colormaps
 from matplotlib import patches
 from matplotlib import pyplot as plt
 
@@ -111,6 +110,61 @@ def plot_crop_calendar(
     ax.grid(axis="x", which="major", ls="-", color="black")
     ax.grid(axis="x", which="minor", ls="-", alpha=0.5)
     ax.set_axisbelow(True)
+
+    return ax
+
+
+def plot_beds(
+    beds_data: BedsData,
+    color_attribute: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,
+) -> plt.Axes:
+    if not ax:
+        fig = plt.figure()
+        ax = fig.gca()
+
+    df_beds = beds_data.df_beds_data
+    crs_wgs84 = "EPSG:4326"
+
+    import geopandas as gpd
+    import shapely
+    gdf_beds = gpd.GeoDataFrame(df_beds, geometry=shapely.from_wkt(df_beds["geolocalised_shape"]), crs=crs_wgs84)
+
+    gdf_gardens = gdf_beds.groupby("garden").geometry.apply(lambda s: shapely.convex_hull(s.union_all()))
+    gdf_gardens = gdf_gardens.set_crs(crs_wgs84)
+
+    gdf_gardens.plot(color="sandybrown", ax=ax, zorder=-1)
+
+    centers = shapely.centroid(gdf_gardens)
+    for garden_name, center in zip(centers.index, centers):
+        ax.text(
+            center.x,
+            center.y,
+            garden_name,
+            ha="center",
+            va="center",
+            bbox={
+                "lw": 0,
+                "facecolor": "white",
+                "alpha": 0.95,
+            },
+        )
+
+    if color_attribute:
+        if color_attribute not in gdf_beds:
+            raise ValueError(f"{color_attribute} is not an attribute of beds data")
+
+        pos_beds = gdf_beds[gdf_beds[color_attribute]]
+        pos_beds.plot(color="green", ax=ax, zorder=-1)
+        pos_patch = patches.Patch(color="green", label="True")
+
+        neg_beds = gdf_beds[~gdf_beds[color_attribute]]
+        neg_beds.plot(color="red", ax=ax, zorder=-1)
+        neg_patch = patches.Patch(color="red", label="False")
+
+        ax.legend(handles=[pos_patch, neg_patch])
+    else:
+        gdf_beds.plot(color="green", ax=ax, zorder=-1)
 
     return ax
 
