@@ -118,6 +118,7 @@ class AgroEcoPlanModel:
         )
 
         self._constraints: dict[Constraint | str, Any] = {}
+        self.initiated = False
 
         
     def __str__(self) -> str:
@@ -138,10 +139,15 @@ class AgroEcoPlanModel:
         constraints :
             List of constraints to initialise the model with.
         """
+        if self.initiated:
+            raise RuntimeError("Model already initialised")
+
         self._add_non_overlapping_assignments_constraints()
         self._break_symmetries()
 
         self.add_constraints(constraints)
+
+        self.initiated = True
 
     def add_constraints(
         self,
@@ -191,9 +197,31 @@ class AgroEcoPlanModel:
         else:
             self._constraints[constraint] = constraints
 
-    def set_objective_function(self, variable: IntVar, maximize: bool) -> None:
-        raise NotImplementedError()
-        self.model.set_objective(variable, maximize)
+    def set_objective_function(self, constraint: Constraint, maximize: bool) -> None:
+        if not self.initiated:
+            raise RuntimeError("Model should be initiated with init() first")
+
+        cp_constraints = constraint.build(self.model, self.assignment_vars)
+
+        associated_bool_vars = []
+        for cstr in cp_constraints:
+            if hasattr(cstr, "reify") and callable(cstr.reify):
+                bool_var = cstr.reify()
+            elif isinstance(cstr, BoolVar):
+                bool_var = cstr
+            elif isinstance(cstr, LogOp):
+                from pychoco.constraints.cnf.log_op import reified_op
+                bool_var = self.model.boolvar()
+                reified_op(bool_var, cstr)
+            else:
+                raise ValueError(f"unknown constraint type {type(cstr)}")
+
+            associated_bool_vars.append(bool_var)
+
+        gain = self.model.intvar(0, len(associated_bool_vars))
+        self.model.sum(associated_bool_vars, "=", gain).post()
+
+        self.model.set_objective(gain, maximize)
 
     def configure_solver(self, search_strategy: str = "default") -> None:
         """Configures the solver and the search strategy to use.

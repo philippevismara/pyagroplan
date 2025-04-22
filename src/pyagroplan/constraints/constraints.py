@@ -100,7 +100,7 @@ class ReturnDelaysConstraint(SuccessionConstraint):
         super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
 
 
-class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisation):
+class PrecedencesConstraint(SuccessionConstraintWithReinitialisation):
     """Enforces crops rotation based on a return delay matrix between crop types.
 
     Parameters
@@ -114,7 +114,14 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
         self,
         crop_plan_problem_data: CropPlanProblemData,
         precedences: pd.DataFrame,
+        forbidden: bool,
     ):
+        if (
+            (forbidden and (precedences > datetime.timedelta(weeks=0)).any(axis=None))
+            or ((not forbidden) and (precedences < datetime.timedelta(weeks=0)).any(axis=None))
+        ):
+            raise ValueError("forbidden argument not consistent with signs in precedences matrix")
+
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         precedences_graph = timedelta_dataframe_to_directed_graph(
@@ -131,13 +138,12 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
             return (
                 (global_starting_date <= max(starting_dates[i], starting_dates[j]))
                 and (i, j) in precedences_graph.edges
-                and (precedences_graph.edges[i, j]["precedence_effect_duration"].days < 0)
                 and (
                     ending_dates[i]
-                    - precedences_graph.edges[
+                    + abs(precedences_graph.edges[
                         i,
                         j
-                    ]["precedence_effect_duration"]
+                    ]["precedence_effect_duration"])
                     >= starting_dates[j]
                 )
             )
@@ -148,10 +154,10 @@ class ForbidNegativePrecedencesConstraint(SuccessionConstraintWithReinitialisati
             filter_func=filter_func,
             node_ids=list(intervals.index),
         )
-        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, temporal_adjacency_graph, forbidden=forbidden)
 
 
-class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
+class SpatialInteractionsConstraint(BinaryNeighbourhoodConstraint):
     """Forbids negative interactions between crops.
 
     Parameters
@@ -167,12 +173,18 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
         crop_plan_problem_data: CropPlanProblemData,
         df_crops_interactions_matrix: pd.DataFrame,
         adjacency_name: str,
+        forbidden: bool,
     ):
+        if (
+            (forbidden and (df_crops_interactions_matrix > 0).any(axis=None))
+            or ((not forbidden) and (df_crops_interactions_matrix < 0).any(axis=None))
+        ):
+            raise ValueError("forbidden argument not consistent with signs in spatial interactions matrix")
         beds_data = crop_plan_problem_data.beds_data
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=forbidden)
 
         self.df_crops_interactions_matrix = df_crops_interactions_matrix
         categorisation_name = self.df_crops_interactions_matrix.index.name
@@ -189,10 +201,10 @@ class ForbidNegativeInteractionsConstraint(BinaryNeighbourhoodConstraint):
         return self.df_crops_interactions_matrix.loc[
             self.categorisation[need_i],
             self.categorisation[need_j]
-        ] < 0  # type: ignore[no-any-return]
+        ] != 0  # type: ignore[no-any-return]
 
 
-class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
+class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
     """Forbids negative interactions between crops using defined subintervals.
 
     Parameters
@@ -210,12 +222,13 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
         crop_plan_problem_data: CropPlanProblemData,
         df_crops_interactions_matrix: pd.DataFrame,
         adjacency_name: str,
+        forbidden: bool,
     ):
         beds_data = crop_plan_problem_data.beds_data
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
+        super().__init__(crop_calendar, adjacency_graph, forbidden=forbidden)
 
         self.df_crops_interactions_matrix = df_crops_interactions_matrix
         categorisation_name = self.df_crops_interactions_matrix.index.name
@@ -258,8 +271,11 @@ class ForbidNegativeInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstr
         sign, s1, e1, s2, e2 = match.groups()
         s1, e1, s2, e2 = int(s1), int(e1), int(s2), int(e2)
 
-        if sign == "+":
-            return False
+        if (
+            (self.forbidden and (sign == "+"))
+            or ((not self.forbidden) and (sign == "-"))
+        ):
+            raise ValueError("forbidden argument not consistent with signs in spatial interactions matrix")
 
         interval1, interval2 = (
             self.crop_calendar.df_assignments

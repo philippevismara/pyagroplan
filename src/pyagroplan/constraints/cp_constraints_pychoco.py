@@ -338,7 +338,25 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                             )
                         )
                 else:
-                    raise NotImplementedError()
+                    if i + 1 == j:
+                        constraints.append(
+                            assignment_vars[i] == assignment_vars[j]
+                        )
+                    else:
+                        candidates_ind = range(i + 1, j)
+
+                        from pychoco.constraints.cnf.log_op import and_op
+                        constraints.append(
+                            and_op(
+                                assignment_vars[i] == assignment_vars[j],
+                                and_op(
+                                    *(
+                                        assignment_vars[k] != assignment_vars[i]
+                                        for k in candidates_ind
+                                    )
+                                ),
+                            )
+                        )
 
         return constraints
 
@@ -385,7 +403,27 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                             )
                         )
                 else:
-                    raise NotImplementedError()
+                    if i + 1 == j:
+                        constraints.append(
+                            assignment_vars[i] == assignment_vars[j]
+                        )
+                    else:
+                        seq_size = (j+1)-i
+                        assignment_vars_seq = assignment_vars[i:j+1]
+
+                        from pychoco.constraints.extension.hybrid import supportable
+
+                        # Case where crop_i and crop_j are assigned to the same bed
+                        tuples_eq = [supportable.any_val()]
+                        tuples_eq += [supportable.ne(supportable.col(0)) for _ in range(seq_size-2)]
+                        tuples_eq += [supportable.eq(supportable.col(0))]
+
+                        constraints.append(
+                            model.hybrid_table(
+                                assignment_vars_seq,
+                                [tuples_eq],
+                            )
+                        )
 
         return constraints
 
@@ -458,8 +496,8 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
                 tuples = []
                 for val1 in a_i.get_domain_values():
-                    for val2 in self.adjacency_graph[val1]: # more general adjacency criteria? (node distance higher than 1? sharing the same connected component?)
-                        tuples.append((val1, val2))
+                    for val2 in self.adjacency_graph[val1]:
+                        tuples.append([val1, val2])
 
                 constraints.append(
                     model.table([a_i, a_j], tuples, feasible=not self.forbidden)

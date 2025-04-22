@@ -269,10 +269,19 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         )
 
         if def_dict["type"] == "forbidden":
-            return cstrs.ForbidNegativePrecedencesConstraint(
+            return cstrs.PrecedencesConstraint(
                 crop_plan_problem_data,
                 matrix,
                 *args,
+                forbidden=True,
+                **kwargs,
+            )
+        elif def_dict["type"] == "enforced":
+            return cstrs.PrecedencesConstraint(
+                crop_plan_problem_data,
+                matrix,
+                *args,
+                forbidden=False,
                 **kwargs,
             )
         else:
@@ -384,11 +393,21 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         )
 
         if def_dict["type"] == "forbidden":
-            return cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
+            return cstrs.SpatialInteractionsSubintervalsConstraint(
                 crop_plan_problem_data,
                 matrix,
                 *args,
                 adjacency_name=def_dict["adjacency_type"],
+                forbidden=True,
+                **kwargs,
+            )
+        elif def_dict["type"] == "enforced":
+            return cstrs.SpatialInteractionsSubintervalsConstraint(
+                crop_plan_problem_data,
+                matrix,
+                *args,
+                adjacency_name=def_dict["adjacency_type"],
+                forbidden=False,
                 **kwargs,
             )
         else:

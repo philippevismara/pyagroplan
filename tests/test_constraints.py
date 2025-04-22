@@ -28,13 +28,15 @@ def test_forbid_negative_interactions_constraint(crop_plan_problem_data):
         comment="#",
         index_col=0,
     )
+    df_spatial_interactions_matrix.clip(upper=0, inplace=True)
     
     model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
-    constraint = cstrs.ForbidNegativeInteractionsConstraint(
+    constraint = cstrs.SpatialInteractionsConstraint(
         crop_plan_problem_data,
         df_spatial_interactions_matrix,
         adjacency_name="garden_neighbors",
+        forbidden=True,
     )
     model.init([constraint])
     model.configure_solver()
@@ -51,19 +53,20 @@ def test_forbid_negative_interactions_subintervals_constraint(crop_plan_problem_
 
     df_spatial_interactions_matrix = pd.DataFrame(
         [
-            ["", "+[1,-1][1,-1]", "+[1,-1][1,-1]"],
-            ["+[1,-1][1,-1]", "", "-[1,-1][-2,-1]"],
-            ["+[1,-1][1,-1]", "-[-2,-1][1,-1]", ""],
+            ["", "", ""],
+            ["", "", "-[1,-1][-2,-1]"],
+            ["", "-[-2,-1][1,-1]", ""],
         ],
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
     df_spatial_interactions_matrix.index.name = "crop_type"
 
-    constraint = cstrs.ForbidNegativeInteractionsSubintervalsConstraint(
+    constraint = cstrs.SpatialInteractionsSubintervalsConstraint(
         crop_plan_problem_data,
         df_spatial_interactions_matrix,
         adjacency_name="garden_neighbors",
+        forbidden=True,
     )
     model.init([constraint])
     model.configure_solver()
@@ -208,12 +211,15 @@ def test_crops_precedences_constraint(crop_plan_problem_data):
         index=["carotte", "tomate", "pomme_de_terre"],
         columns=["carotte", "tomate", "pomme_de_terre"],
     )
+    import datetime
+    df_precedences = df_precedences.map(lambda i: datetime.timedelta(weeks=i))
 
     model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
 
-    constraint = cstrs.ForbidNegativePrecedencesConstraint(
+    constraint = cstrs.PrecedencesConstraint(
         crop_plan_problem_data,
         df_precedences,
+        forbidden=True,
     )
     model.init([constraint])
     model.configure_solver()
