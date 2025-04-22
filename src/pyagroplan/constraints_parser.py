@@ -455,15 +455,17 @@ class GroupCropsConstraintDefinitionParser:
             crop_plan_problem_data,
             def_dict["group_by"],
         )
-        filtered_crops_groups = self.filter_crops_groups(
-            crop_plan_problem_data,
-            crops_groups,
-            def_dict["filtering_rule"],
-        )
+
+        if "filtering_rule" in def_dict:
+            crops_groups = self.filter_crops_groups(
+                crop_plan_problem_data,
+                crops_groups,
+                def_dict["filtering_rule"],
+            )
 
         return cstrs.GroupCropsConstraint(
             crop_plan_problem_data,
-            filtered_crops_groups,
+            crops_groups,
             adjacency_name=def_dict["adjacency_type"],
         )
 
