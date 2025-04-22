@@ -312,51 +312,50 @@ class SuccessionConstraintWithReinitialisation(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for i in self.temporal_adjacency_graph:
-            for j in self.temporal_adjacency_graph[i]:
-                if i > j:
-                    continue
+        for i, j in self.temporal_adjacency_graph.edges:
+            if i > j:
+                continue
 
-                if self.forbidden:
-                    if i + 1 == j:
-                        constraints.append(
-                            assignment_vars[i] != assignment_vars[j]
-                        )
-                    else:
-                        candidates_ind = range(i + 1, j)
-
-                        from pychoco.constraints.cnf.log_op import implies_op, or_op
-                        constraints.append(
-                            implies_op(
-                                assignment_vars[i] == assignment_vars[j],
-                                or_op(
-                                    *(
-                                        assignment_vars[k] == assignment_vars[i]
-                                        for k in candidates_ind
-                                    )
-                                ),
-                            )
-                        )
+            if self.forbidden:
+                if i + 1 == j:
+                    constraints.append(
+                        assignment_vars[i] != assignment_vars[j]
+                    )
                 else:
-                    if i + 1 == j:
-                        constraints.append(
-                            assignment_vars[i] == assignment_vars[j]
-                        )
-                    else:
-                        candidates_ind = range(i + 1, j)
+                    candidates_ind = range(i + 1, j)
 
-                        from pychoco.constraints.cnf.log_op import and_op
-                        constraints.append(
-                            and_op(
-                                assignment_vars[i] == assignment_vars[j],
-                                and_op(
-                                    *(
-                                        assignment_vars[k] != assignment_vars[i]
-                                        for k in candidates_ind
-                                    )
-                                ),
-                            )
+                    from pychoco.constraints.cnf.log_op import implies_op, or_op
+                    constraints.append(
+                        implies_op(
+                            assignment_vars[i] == assignment_vars[j],
+                            or_op(
+                                *(
+                                    assignment_vars[k] == assignment_vars[i]
+                                    for k in candidates_ind
+                                )
+                            ),
                         )
+                    )
+            else:
+                if i + 1 == j:
+                    constraints.append(
+                        assignment_vars[i] == assignment_vars[j]
+                    )
+                else:
+                    candidates_ind = range(i + 1, j)
+
+                    from pychoco.constraints.cnf.log_op import and_op
+                    constraints.append(
+                        and_op(
+                            assignment_vars[i] == assignment_vars[j],
+                            and_op(
+                                *(
+                                    assignment_vars[k] != assignment_vars[i]
+                                    for k in candidates_ind
+                                )
+                            ),
+                        )
+                    )
 
         return constraints
 
@@ -367,63 +366,62 @@ class SuccessionConstraintWithReinitialisation(Constraint):
     ) -> Sequence[ChocoConstraint]:
         constraints = []
 
-        for i in self.temporal_adjacency_graph:
-            for j in self.temporal_adjacency_graph[i]:
-                if i > j:
-                    continue
+        for i, j in self.temporal_adjacency_graph.edges:
+            if i > j:
+                continue
 
-                if self.forbidden:
-                    if i + 1 == j:
-                        constraints.append(
-                            assignment_vars[i] != assignment_vars[j]
-                        )
-                    else:
-                        seq_size = (j+1)-i
-                        assignment_vars_seq = assignment_vars[i:j+1]
-
-                        from pychoco.constraints.extension.hybrid import supportable
-
-                        # Case where crop_i and crop_j are assigned to different beds
-                        tuples_neq = [supportable.any_val() for _ in range(seq_size-1)]
-                        tuples_neq += [supportable.ne(supportable.col(0))]
-
-                        # Cases where crop_i and crop_j are assigned to the same beds (and thus, there exists a crop_k in-between on the same bed)
-                        tuples_eq_list = [
-                            [supportable.any_val() for _ in range(k)]
-                            + [supportable.eq(supportable.col(0))]
-                            + [supportable.any_val() for _ in range(seq_size-2-k)]
-                            + [supportable.eq(supportable.col(0))]
-                            for k in range(1, seq_size-1)
-                        ]
-
-                        constraints.append(
-                            model.hybrid_table(
-                                assignment_vars_seq,
-                                [tuples_neq] + tuples_eq_list,
-                            )
-                        )
+            if self.forbidden:
+                if i + 1 == j:
+                    constraints.append(
+                        assignment_vars[i] != assignment_vars[j]
+                    )
                 else:
-                    if i + 1 == j:
-                        constraints.append(
-                            assignment_vars[i] == assignment_vars[j]
+                    seq_size = (j+1)-i
+                    assignment_vars_seq = assignment_vars[i:j+1]
+
+                    from pychoco.constraints.extension.hybrid import supportable
+
+                    # Case where crop_i and crop_j are assigned to different beds
+                    tuples_neq = [supportable.any_val() for _ in range(seq_size-1)]
+                    tuples_neq += [supportable.ne(supportable.col(0))]
+
+                    # Cases where crop_i and crop_j are assigned to the same beds (and thus, there exists a crop_k in-between on the same bed)
+                    tuples_eq_list = [
+                        [supportable.any_val() for _ in range(k)]
+                        + [supportable.eq(supportable.col(0))]
+                        + [supportable.any_val() for _ in range(seq_size-2-k)]
+                        + [supportable.eq(supportable.col(0))]
+                        for k in range(1, seq_size-1)
+                    ]
+
+                    constraints.append(
+                        model.hybrid_table(
+                            assignment_vars_seq,
+                            [tuples_neq] + tuples_eq_list,
                         )
-                    else:
-                        seq_size = (j+1)-i
-                        assignment_vars_seq = assignment_vars[i:j+1]
+                    )
+            else:
+                if i + 1 == j:
+                    constraints.append(
+                        assignment_vars[i] == assignment_vars[j]
+                    )
+                else:
+                    seq_size = (j+1)-i
+                    assignment_vars_seq = assignment_vars[i:j+1]
 
-                        from pychoco.constraints.extension.hybrid import supportable
+                    from pychoco.constraints.extension.hybrid import supportable
 
-                        # Case where crop_i and crop_j are assigned to the same bed
-                        tuples_eq = [supportable.any_val()]
-                        tuples_eq += [supportable.ne(supportable.col(0)) for _ in range(seq_size-2)]
-                        tuples_eq += [supportable.eq(supportable.col(0))]
+                    # Case where crop_i and crop_j are assigned to the same bed
+                    tuples_eq = [supportable.any_val()]
+                    tuples_eq += [supportable.ne(supportable.col(0)) for _ in range(seq_size-2)]
+                    tuples_eq += [supportable.eq(supportable.col(0))]
 
-                        constraints.append(
-                            model.hybrid_table(
-                                assignment_vars_seq,
-                                [tuples_eq],
-                            )
+                    constraints.append(
+                        model.hybrid_table(
+                            assignment_vars_seq,
+                            [tuples_eq],
                         )
+                    )
 
         return constraints
 

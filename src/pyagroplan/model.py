@@ -218,10 +218,11 @@ class AgroEcoPlanModel:
 
             associated_bool_vars.append(bool_var)
 
-        gain = self.model.intvar(0, len(associated_bool_vars))
-        self.model.sum(associated_bool_vars, "=", gain).post()
+        gain_var = self.model.intvar(0, len(associated_bool_vars))
+        self.model.sum(associated_bool_vars, "=", gain_var).post()
 
-        self.model.set_objective(gain, maximize)
+        self.model.set_objective(gain_var, maximize)
+        self.gain_var = gain_var
 
     def configure_solver(self, search_strategy: str = "default") -> None:
         """Configures the solver and the search strategy to use.
