@@ -13,5 +13,5 @@ dependencies = [
   "networkx",
   "numpy",
   "pandas>=2.1.0",
-  "pychoco==0.2.1",
+  "pychoco==0.2.3",
 ]
