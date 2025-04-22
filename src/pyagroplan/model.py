@@ -266,7 +266,10 @@ class AgroEcoPlanModel:
 
         has_solution = self.solver.solve(**kwargs)
         if not has_solution:
-            raise RuntimeError("No solution found")
+            if self.solver.get_search_state() == "STOPPED":
+                raise RuntimeError("No solution found before search limits reached")
+            else:
+                raise RuntimeError("Problem not satisfiable: no solution can be found")
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_plan_problem_data, variables_values)
