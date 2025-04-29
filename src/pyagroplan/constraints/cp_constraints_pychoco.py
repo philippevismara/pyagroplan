@@ -348,11 +348,9 @@ class SuccessionConstraintWithReinitialisation(Constraint):
                     constraints.append(
                         and_op(
                             assignment_vars[i] == assignment_vars[j],
-                            and_op(
-                                *(
-                                    assignment_vars[k] != assignment_vars[i]
-                                    for k in candidates_ind
-                                )
+                            *(
+                                assignment_vars[k] != assignment_vars[i]
+                                for k in candidates_ind
                             ),
                         )
                     )
@@ -580,6 +578,7 @@ class GroupNeighbourhoodConstraint(Constraint):
                     crops_group_assignment_vars,
                     allowed_tuples,
                     feasible=not self.forbidden,
+                    algo="GAC3rm+",
                 )
             )
 
