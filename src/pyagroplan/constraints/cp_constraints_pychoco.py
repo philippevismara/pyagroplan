@@ -274,7 +274,7 @@ class SuccessionConstraintWithReinitialisation(Constraint):
         crop_calendar: CropCalendar,
         temporal_adjacency_graph: nx.Graph,
         forbidden: bool,
-        implementation: str="hybrid_tables",
+        implementation: str="default",
     ):
         self.crop_calendar = crop_calendar
         self.temporal_adjacency_graph = temporal_adjacency_graph
@@ -291,6 +291,14 @@ class SuccessionConstraintWithReinitialisation(Constraint):
             "logical_operations": self._build_logical_operations,
             "hybrid_tables": self._build_hybrid_tables,
         }
+
+        # FIXME try to avoid bug in choco when reifying hybrid tables (sort of workaround to use logical operations when optimizing and hybrid tables when constraining)
+        if implementation == "default":
+            if forbidden:
+                implementation = "hybrid_tables"
+            else:
+                implementation = "logical_operations"
+
         if implementation not in build_funcs.keys():
             raise ValueError(
                 f"'implementation' must take one of the following values: {list(build_funcs.keys())}"

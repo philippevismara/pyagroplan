@@ -118,6 +118,8 @@ class AgroEcoPlanModel:
         )
 
         self._constraints: dict[Constraint | str, Any] = {}
+        self._objective_functions: dict[Constraint | str, Any] = {}
+        self.gain_vars: dict[Constraint | str, Any] = {}
         self.initiated = False
 
         
@@ -197,7 +199,12 @@ class AgroEcoPlanModel:
         else:
             self._constraints[constraint] = constraints
 
-    def set_objective_function(self, constraint: Constraint, maximize: bool) -> None:
+    def set_objective_function(
+        self,
+        constraint: Constraint,
+        maximize: bool,
+        name: Optional[str]=None,
+    ) -> None:
         if not self.initiated:
             raise RuntimeError("Model should be initiated with init() first")
 
@@ -222,7 +229,14 @@ class AgroEcoPlanModel:
         self.model.sum(associated_bool_vars, "=", gain_var).post()
 
         self.model.set_objective(gain_var, maximize)
-        self.gain_var = gain_var
+
+        if name:
+            self._objective_functions[name] = cp_constraints
+            self.gain_vars[name] = gain_var
+        else:
+            self._objective_functions[constraint] = cp_constraints
+            self.gain_vars[constraint] = gain_var
+
 
     def configure_solver(self, search_strategy: str = "default") -> None:
         """Configures the solver and the search strategy to use.
@@ -345,6 +359,8 @@ class AgroEcoPlanModel:
 
 
     def print_constraints_statistics(self) -> None:
+        print("List of registered constraints")
+
         for constraint_obj, cp_constraints in self._constraints.items():
             if isinstance(constraint_obj, str):
                 constraint_name = constraint_obj
@@ -359,3 +375,21 @@ class AgroEcoPlanModel:
                 print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
             else:
                 print(f"{constraint_name}: {len(cp_constraints)} constraints")
+
+        if self._objective_functions:
+            print("\nList of registered objective functions")
+
+            for constraint_obj, cp_constraints in self._objective_functions.items():
+                if isinstance(constraint_obj, str):
+                    constraint_name = constraint_obj
+                else:
+                    constraint_name = constraint_obj.__class__.__name__
+
+                if len(cp_constraints) > 0:
+                    if hasattr(cp_constraints[0], "get_name"):
+                        constraint_type = cp_constraints[0].get_name()
+                    else:
+                        constraint_type = cp_constraints[0]
+                    print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
+                else:
+                    print(f"{constraint_name}: {len(cp_constraints)} constraints")
