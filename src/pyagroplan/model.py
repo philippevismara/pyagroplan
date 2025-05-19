@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
     from .solution import Solution
 
+import itertools
+
 import numpy as np
 from collections.abc import Mapping, Sequence
 
@@ -288,6 +290,38 @@ class AgroEcoPlanModel:
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_plan_problem_data, variables_values)
+
+
+    def check_if_unsatisfiable_constraints_subsets(
+        self,
+        constraints: dict,
+        max_subset_size: int,
+    ) -> list:
+        import math
+        from rich.progress import track
+
+        unsatisfiable_combinations = []
+
+        for subset_size in range(1, max_subset_size+1):
+            for constraints_subset in track(
+                itertools.combinations(constraints.items(), subset_size),
+                description=f"Testing combinations of {subset_size} constraints...",
+                total=math.comb(len(constraints), subset_size),
+            ):
+                constraints_subset = dict(constraints_subset)
+
+                model = AgroEcoPlanModel(self.crop_plan_problem_data)
+                model.init(constraints_subset)
+
+                try:
+                    solution = model.solve(time_limit="60s")
+                except RuntimeError as e:
+                    unsatisfiable_combinations.append(list(constraints_subset.keys()))
+
+            if unsatisfiable_combinations:
+                break
+
+        return unsatisfiable_combinations
 
     def _extract_variables_values(self, variables: Sequence[IntVar]) -> list[int]:
         """Extracts the instantiated values of the variables.
