@@ -138,6 +138,7 @@ class PrecedencesConstraint(SuccessionConstraintWithReinitialisation):
             return (
                 (global_starting_date <= max(starting_dates[i], starting_dates[j]))
                 and (i, j) in precedences_graph.edges
+                and (ending_dates[i] < starting_dates[j])
                 and (
                     ending_dates[i]
                     + abs(precedences_graph.edges[
