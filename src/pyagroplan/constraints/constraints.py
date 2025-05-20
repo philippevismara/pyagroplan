@@ -134,6 +134,12 @@ class PrecedencesConstraint(SuccessionConstraintWithReinitialisation):
         ending_dates = crop_calendar.df_assignments["ending_date"].values
         global_starting_date = crop_calendar.global_starting_date
 
+        # Removes the past assignments not relevant because other crops were assigned to the same bed afterward
+        if crop_calendar.past_crop_plan:
+            allocated_bed_ids = crop_calendar.past_crop_plan.allocated_bed_id
+            past_indices_to_remove = allocated_bed_ids.index[allocated_bed_ids.duplicated(keep="last")]
+            intervals = intervals.drop(index=past_indices_to_remove)
+
         def filter_func(i: int, j: int) -> bool:
             return (
                 (global_starting_date <= max(starting_dates[i], starting_dates[j]))
