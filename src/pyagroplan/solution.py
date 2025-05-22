@@ -36,7 +36,7 @@ class Solution:
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         crops_planning = crop_calendar.df_assignments[[
-            "crop_id", "crop_name", "starting_date", "ending_date"
+            "crop_id", "crop_group_id", "crop_name", "starting_date", "ending_date"
         ]].copy()
         crops_planning["assignment"] = np.asarray(assignments, dtype=int)
         crops_planning.sort_index(inplace=True)

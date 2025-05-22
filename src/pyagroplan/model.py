@@ -67,8 +67,6 @@ class AgroEcoPlanModel:
         Number of assignments to make.
     n_beds : int
         Number of beds.
-    verbose : bool
-        Verbose output.
     model : Model
         Pychoco `Model` object used.
     assignment_vars : list[IntVar]
@@ -78,14 +76,11 @@ class AgroEcoPlanModel:
     ----------
     crop_plan_problem_data : CropPlanProblemData
         `CropPlanProblemData` object used to define the model.
-    verbose : bool, optional
-        If True, verbose output.
     """
 
     def __init__(
         self,
         crop_plan_problem_data: CropPlanProblemData,
-        verbose: bool = False,
     ):
         beds_data = crop_plan_problem_data.beds_data
         crop_calendar = crop_plan_problem_data.crop_calendar
@@ -108,7 +103,6 @@ class AgroEcoPlanModel:
         self.crop_plan_problem_data = crop_plan_problem_data
         self.n_assignments = crop_plan_problem_data.crop_calendar.n_assignments
         self.n_beds = crop_plan_problem_data.beds_data.n_beds
-        self.verbose = verbose
 
         self.model = model
 
@@ -126,9 +120,8 @@ class AgroEcoPlanModel:
 
         
     def __str__(self) -> str:
-        return "AgroEcoPlanModel(crop_plan_problem_data={}, verbose={})".format(
+        return "AgroEcoPlanModel(crop_plan_problem_data={})".format(
             self.crop_plan_problem_data,
-            self.verbose,
         )
 
 

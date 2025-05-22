@@ -134,14 +134,14 @@ class LocationConstraint(Constraint):
         )
 
         for _, crop_data in df.iterrows():
-            crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
+            is_crop_selected, selected_beds = self.beds_selection_func(crop_data, self.beds_data)
 
-            if len(crop_selected_beds) > 0:
-                crop_selected_beds = list(map(int, crop_selected_beds))
+            if is_crop_selected:
+                selected_beds = list(map(int, selected_beds))
 
-                if self.forbidden and (crop_data["assignment"] in crop_selected_beds):
+                if self.forbidden and (crop_data["assignment"] in selected_beds):
                     violated_constraints.append(crop_data)
-                elif (not self.forbidden) and (crop_data["assignment"] not in crop_selected_beds):
+                elif (not self.forbidden) and (crop_data["assignment"] not in selected_beds):
                     violated_constraints.append(crop_data)
 
         return (len(violated_constraints) == 0), violated_constraints

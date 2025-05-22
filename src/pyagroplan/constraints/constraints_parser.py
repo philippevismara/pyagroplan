@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
 
-    from . import CropPlanProblemData
-    from .constraints.cp_constraints_pychoco import Constraint
+    from .. import CropPlanProblemData
+    from .cp_constraints_pychoco import Constraint
 
 import warnings
 from abc import ABC, abstractmethod
@@ -14,8 +14,8 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from ._typing import FilePath
-from .constraints import constraints as cstrs
+from .._typing import FilePath
+from . import constraints as cstrs
 
 
 def _preprocess_evaluated_str(eval_str: str) -> str:

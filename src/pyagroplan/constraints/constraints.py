@@ -8,8 +8,12 @@ if TYPE_CHECKING:
     import pandas as pd
 
     from .. import CropPlanProblemData
+    from ..data import BedsData
 
 import datetime
+
+import numpy as np
+
 
 from .cp_constraints_pychoco import (
     BinaryNeighbourhoodConstraint,
@@ -262,7 +266,6 @@ class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
         ]
 
         # Checks if there is no constraint enforced in the matrix
-        import numpy as np
         if (
             (isinstance(interaction_str, (float, np.floating)) and np.isnan(interaction_str))
             or (len(interaction_str) == 0)
@@ -313,64 +316,6 @@ class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
             (interval1_final[0] <= interval2_final[1])
             and (interval1_final[1] >= interval2_final[0])
         )
-
-
-class DiluteSpeciesConstraint(BinaryNeighbourhoodConstraint):
-    """Forbids crops from identical species to be spatially adjacent.
-
-    Parameters
-    ----------
-    crop_plan_problem_data : CropPlanProblemData
-    adjacency_name: string
-    """
-
-    def __init__(
-        self,
-        crop_plan_problem_data: CropPlanProblemData,
-        adjacency_name: str,
-    ):
-        beds_data = crop_plan_problem_data.beds_data
-        crop_calendar = crop_plan_problem_data.crop_calendar
-
-        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
-        self.crops_species = crop_calendar.df_assignments["crop_name"].array
-
-    def crops_selection_function(self, i: int, j: int) -> bool:
-        """Selects only pairs of crops from identical species.
-
-        :meta private:
-        """
-        return self.crops_species[i] == self.crops_species[j]  # type: ignore[no-any-return]
-
-
-class DiluteFamilyConstraint(BinaryNeighbourhoodConstraint):
-    """Forbids crops from identical family to be spatially adjacent.
-
-    Parameters
-    ----------
-    crop_plan_problem_data : CropPlanProblemData
-    adjacency_name : string
-    """
-
-    def __init__(
-        self,
-        crop_plan_problem_data: CropPlanProblemData,
-        adjacency_name: str,
-    ):
-        beds_data = crop_plan_problem_data.beds_data
-        crop_calendar = crop_plan_problem_data.crop_calendar
-
-        adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
-        super().__init__(crop_calendar, adjacency_graph, forbidden=True)
-        self.crops_families = crop_calendar.df_assignments["crop_family"].array
-
-    def crops_selection_function(self, i: int, j: int) -> bool:
-        """Selects only pairs of crops from identical family.
-
-        :meta private:
-        """
-        return self.crops_families[i] == self.crops_families[j]  # type: ignore[no-any-return]
 
 
 class GroupCropsConstraint(GroupNeighbourhoodConstraint):

@@ -30,7 +30,7 @@ def test_forbid_negative_interactions_constraint(crop_plan_problem_data):
     )
     df_spatial_interactions_matrix.clip(upper=0, inplace=True)
     
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     constraint = cstrs.SpatialInteractionsConstraint(
         crop_plan_problem_data,
@@ -49,7 +49,7 @@ def test_forbid_negative_interactions_constraint(crop_plan_problem_data):
 
 
 def test_forbid_negative_interactions_subintervals_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     df_spatial_interactions_matrix = pd.DataFrame(
         [
@@ -78,40 +78,6 @@ def test_forbid_negative_interactions_subintervals_constraint(crop_plan_problem_
         assert constraint.check_solution(solution)[0]
 
 
-def test_dilute_species_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
-
-    constraint = cstrs.DiluteSpeciesConstraint(
-        crop_plan_problem_data,
-        adjacency_name="garden_neighbors",
-    )
-    model.init([constraint])
-    model.configure_solver()
-    solutions = list(model.iterate_over_all_solutions())
-
-    assert len(solutions) > 0
-
-    for solution in solutions:
-        assert constraint.check_solution(solution)[0]
-
-
-def test_dilute_family_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
-
-    constraint = cstrs.DiluteFamilyConstraint(
-        crop_plan_problem_data,
-        adjacency_name="garden_neighbors",
-    )
-    model.init([constraint])
-    model.configure_solver()
-    solutions = list(model.iterate_over_all_solutions())
-
-    assert len(solutions) > 0
-
-    for solution in solutions:
-        assert constraint.check_solution(solution)[0]
-
-
 def test_return_delays_constraint(crop_plan_problem_data):
     import pandas as pd
     df_return_delays = pd.DataFrame(
@@ -126,7 +92,7 @@ def test_return_delays_constraint(crop_plan_problem_data):
     import datetime
     df_return_delays = df_return_delays.map(lambda i: datetime.timedelta(weeks=i))
 
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     constraint = cstrs.ReturnDelaysConstraint(
         crop_plan_problem_data,
@@ -143,7 +109,7 @@ def test_return_delays_constraint(crop_plan_problem_data):
 
 
 def test_group_crops_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     constraint = cstrs.GroupCropsConstraint(
         crop_plan_problem_data,
@@ -160,8 +126,8 @@ def test_group_crops_constraint(crop_plan_problem_data):
         assert constraint.check_solution(solution)[0]
 
 
-def test_crops_location_constraint(crop_plan_problem_data):
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+def test_compatible_beds_constraint(crop_plan_problem_data):
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     def beds_selection_func(crop_data, beds_data):
         df_beds_attributes = beds_data._df_beds_data.attributes
@@ -169,23 +135,23 @@ def test_crops_location_constraint(crop_plan_problem_data):
 
         match crop_data["besoin_lumiere"]:
             case "ombre":
-                return beds_ids[
+                return True, beds_ids[
                     (df_beds_attributes["ombre_ete"] == "oui")
                     & (df_beds_attributes["ombre_hiver"] == "oui")
                 ]
             case "mi-ombre":
-                return beds_ids[
+                return True, beds_ids[
                     df_beds_attributes["ombre_ete"] != df_beds_attributes["ombre_hiver"]
                 ]
             case "soleil":
-                return beds_ids[
+                return True, beds_ids[
                     (df_beds_attributes["ombre_ete"] == "non")
                     & (df_beds_attributes["ombre_hiver"] == "non")
                 ]
             case _:
-                return []
+                return False, []
 
-    constraint = cstrs.LocationConstraint(
+    constraint = cstrs.CompatibleBedsConstraint(
         crop_plan_problem_data,
         beds_selection_func,
         forbidden=False,
@@ -214,7 +180,7 @@ def test_crops_precedences_constraint(crop_plan_problem_data):
     import datetime
     df_precedences = df_precedences.map(lambda i: datetime.timedelta(weeks=i))
 
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     constraint = cstrs.PrecedencesConstraint(
         crop_plan_problem_data,

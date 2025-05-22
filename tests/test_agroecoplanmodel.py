@@ -29,7 +29,7 @@ def crop_plan_problem_data(with_past_crop_plan):
 def test_agroecoplanmodel_no_constraints_with_solution(crop_plan_problem_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     assert model.n_assignments == (0+8)
     assert len(model.past_crop_plan_vars) == 0
@@ -52,7 +52,7 @@ def test_agroecoplanmodel_no_constraints_with_solution(crop_plan_problem_data):
 def test_agroecoplanmodel_with_past_crop_plan_no_constraints_with_solution(crop_plan_problem_data):
     constraints = []
 
-    model = AgroEcoPlanModel(crop_plan_problem_data, verbose=False)
+    model = AgroEcoPlanModel(crop_plan_problem_data)
 
     assert model.n_assignments == (7+8)
     assert len(model.past_crop_plan_vars) == 7
