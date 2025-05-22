@@ -109,15 +109,15 @@ class LocationConstraint(Constraint):
         for crop_var, (_, crop_data) in zip(
             future_assignment_vars, df_future_assignments.iterrows()
         ):
-            crop_selected_beds = self.beds_selection_func(crop_data, self.beds_data)
+            is_crop_selected, selected_beds = self.beds_selection_func(crop_data, self.beds_data)
 
-            if len(crop_selected_beds) > 0:
-                crop_selected_beds = list(map(int, crop_selected_beds))
+            if is_crop_selected:
+                selected_beds = list(map(int, selected_beds))
 
                 if self.forbidden:
-                    crop_constraints = model.not_member(crop_var, crop_selected_beds)
+                    crop_constraints = model.not_member(crop_var, selected_beds)
                 else:
-                    crop_constraints = model.member(crop_var, crop_selected_beds)
+                    crop_constraints = model.member(crop_var, selected_beds)
 
                 constraints.append(crop_constraints)
 

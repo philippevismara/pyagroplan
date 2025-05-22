@@ -124,51 +124,7 @@ class ConstraintDefinitionsParser(ABC):
         return df_matrix
 
 
-class CompatibleBedsConstraintDefinitionsParser(ConstraintDefinitionsParser):
-    def parse_rule_str(
-        self,
-        rule_str: str,
-        value: Any,
-        default_value: Any,
-        **kwargs: Any,
-    ) -> Callable:
-        rule_str = _preprocess_evaluated_str(rule_str)
-
-        def rule_func(row_data, df_data):
-            preceding_crop = row_data
-            following_crop = df_data
-
-            res = pd.Series(index=df_data.index, dtype=object)
-            res[:] = default_value
-            ind = eval(rule_str)
-            res[ind] = value
-
-            return res
-
-        return rule_func
-
-    def parse_rule(self, **kwargs: Any) -> Callable:
-        type = kwargs["type"]
-        if type == "forbidden":
-            type = "-"
-        elif type == "enforced":
-            type = "+"
-        else:
-            raise ValueError(
-                f"Precedence interaction constraint type must be either "
-                f"'forbidden' or 'enforced', given {type}."
-            )
-
-        default_value = datetime.timedelta(days=0)
-        #precendence_effect_delay = kwargs["precedence_effect_delay"]
-        #value = eval(f"datetime.timedelta({precendence_effect_delay})")
-        value = datetime.timedelta(weeks=int(type + kwargs["precedence_effect_delay_in_weeks"]))
-
-        rule_str = kwargs["rule"]
-
-        rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
-        return rule
-
+class CompatibleBedsConstraintDefinitionsParser:
     def build_constraint_from_definition_dict(
         self,
         crop_plan_problem_data: CropPlanProblemData,
@@ -197,13 +153,13 @@ class CompatibleBedsConstraintDefinitionsParser(ConstraintDefinitionsParser):
         def beds_selection_func(crop, beds_data):
             bed = beds_data.df_beds_data
             if eval(crops_selection_rule):
-                return df_beds["bed_id"][np.where(
+                return True, df_beds["bed_id"][np.where(
                     eval(beds_selection_rule)
                 )[0]].values
+            else:
+                return False, []
 
-            return []
-
-        return cstrs.LocationConstraint(
+        return cstrs.CompatibleBedsConstraint(
             crop_plan_problem_data,
             beds_selection_func,
             forbidden=forbidden,
