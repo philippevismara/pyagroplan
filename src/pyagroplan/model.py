@@ -420,3 +420,16 @@ class AgroEcoPlanModel:
                     print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
                 else:
                     print(f"{constraint_name}: {len(cp_constraints)} constraints")
+
+
+    def print_objective_functions_values(self) -> None:
+        if self._objective_functions:
+            for constraint_obj, gain_var in self.gain_vars.items():
+                if isinstance(constraint_obj, str):
+                    constraint_name = constraint_obj
+                else:
+                    constraint_name = constraint_obj.__class__.__name__
+
+                gain_value = gain_var.get_value()
+                max_value = len(self._objective_functions[constraint_obj])
+                print(f"{constraint_name}: value/max_value = {gain_value}/{max_value}")
