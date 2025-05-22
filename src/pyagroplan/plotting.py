@@ -5,6 +5,8 @@ if TYPE_CHECKING:
     from collections.abc import Collection
     from typing import Any, Optional
 
+    import pandas as pd
+
     from .data import BedsData, CropCalendar
     from .solution import Solution
 
@@ -49,6 +51,7 @@ def plot_crop_calendar(
     crop_calendar: CropCalendar,
     ax: Optional[plt.Axes] = None,
     colors: Optional[dict | str] = "auto",
+    future_crop_calendar_only: bool = True,
 ) -> plt.Axes:
     if not ax:
         fig = plt.figure(figsize=(5, 5))
@@ -58,20 +61,29 @@ def plot_crop_calendar(
     if colors == "auto":
         colors = get_crops_colors_by_botanical_family(crop_calendar)
 
-    df_crop_calendar = crop_calendar.df_crop_calendar[
+    if future_crop_calendar_only:
+        df_crop_calendar = crop_calendar.df_future_crop_calendar
+    else:
+        df_crop_calendar = crop_calendar.df_crop_calendar
+
+    df_crop_calendar = df_crop_calendar[
         ["crop_name", "starting_date", "ending_date", "quantity"]
     ]
     first_date = df_crop_calendar["starting_date"].min()
     last_date = df_crop_calendar["ending_date"].max()
-    n_days = last_date - first_date
-    n_crops_total = df_crop_calendar["quantity"].sum()
+    n_crops_total = len(df_crop_calendar)
 
     offset = 0.0
     for i, vals in df_crop_calendar.iterrows():
+        if vals.quantity == 1:
+            text = vals.crop_name
+        else:
+            text = f"{vals.crop_name} (x{vals.quantity})"
+
         p = patches.Rectangle(
             (vals["starting_date"], offset),
             width=vals["ending_date"] - vals["starting_date"],
-            height=vals["quantity"],
+            height=1,
             color=colors.get(vals["crop_name"], None),
             antialiased=False,
             linewidth=0,
@@ -81,7 +93,7 @@ def plot_crop_calendar(
         ax.text(
             p.get_x() + p.get_width() / 2,
             p.get_y() + p.get_height() / 2,
-            vals["crop_name"],
+            text,
             horizontalalignment="center",
             verticalalignment="center",
         )
@@ -204,8 +216,10 @@ def plot_beds_adjacency_graph(
     return ax
 
 
-def plot_solution(
-    solution: Solution,
+def plot_crop_plan(
+    beds_data: BedsData,
+    crop_calendar: CropCalendar,
+    df_crop_plan: Optional[pd.DataFrame] = None,
     colors: Optional[dict | str] = "auto",
     ax: Optional[plt.Axes] = None,
 ) -> plt.Axes:
@@ -213,8 +227,13 @@ def plot_solution(
         fig = plt.figure(figsize=(5, 5))
         ax = fig.gca()
 
-    beds_data = solution.crop_plan_problem_data.beds_data
-    crop_calendar = solution.crop_plan_problem_data.crop_calendar
+    if df_crop_plan is None:
+        if hasattr(crop_calendar, "past_crop_plan"):
+            past_crop_plan = crop_calendar.past_crop_plan
+            df_crop_plan = past_crop_plan.df_past_assignments.copy()
+            df_crop_plan["allocated_bed_id"] = past_crop_plan.allocated_bed_id
+        else:
+            raise ValueError("df_crop_plan not set but no past crop plan found in crop_calendar")
 
     from collections import defaultdict
 
@@ -224,14 +243,13 @@ def plot_solution(
 
     sizes = beds_data.df_beds_data["garden"].value_counts(sort=False).values
 
-    df_solution = solution.crops_planning
-    first_date = df_solution["starting_date"].min()
-    last_date = df_solution["ending_date"].max()
+    first_date = df_crop_plan["starting_date"].min()
+    last_date = df_crop_plan["ending_date"].max()
     n_beds = beds_data.n_beds
 
-    for i, vals in df_solution.iterrows():
+    for i, vals in df_crop_plan.iterrows():
         p = patches.Rectangle(
-            (vals["starting_date"], vals["assignment"]),
+            (vals["starting_date"], vals["allocated_bed_id"]),
             width=vals["ending_date"] - vals["starting_date"],
             height=1,
             color=colors[vals["crop_name"]],
@@ -293,3 +311,20 @@ def plot_solution(
     ax.invert_yaxis()
 
     return ax
+
+
+def plot_solution(
+    solution: Solution,
+    colors: Optional[dict | str] = "auto",
+    ax: Optional[plt.Axes] = None,
+) -> plt.Axes:
+    # TODO normalize name throughout package
+    df_crop_plan = solution.crops_planning.rename(columns={"assignment": "allocated_bed_id"})
+
+    return plot_crop_plan(
+        solution.crop_plan_problem_data.beds_data,
+        solution.crop_plan_problem_data.crop_calendar,
+        df_crop_plan=df_crop_plan,
+        colors=colors,
+        ax=ax,
+    )
