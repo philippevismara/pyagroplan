@@ -271,6 +271,9 @@ class AgroEcoPlanModel:
         -------
         Solution
         """
+        if not self.initiated:
+            raise RuntimeError("Model should be initialised using the init() method")
+
         if not hasattr(self, "solver"):
             self.configure_solver()
 
