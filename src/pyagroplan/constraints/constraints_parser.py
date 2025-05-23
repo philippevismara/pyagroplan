@@ -453,30 +453,35 @@ _available_parsers = {
     "group_crops_constraint": GroupCropsConstraintDefinitionParser,
 }
 
+def load_constraint(
+    crop_plan_problem_data: CropPlanProblemData,
+    definition_dict: dict[str, Any],
+    name: Optional[str] = None,
+) -> dict[str, Constraint]:
+    if "constraint_type" not in definition_dict:
+        raise KeyError("`constraint_type` field required in constraints definitions")
+
+    constraint_type = definition_dict["constraint_type"]
+
+    if constraint_type not in _available_parsers:
+        raise ValueError(
+            f"`constraint_type` should be one of `{list(_available_parsers.keys())}` (given `{constraint_type}`)"
+        )
+
+    constraint_parser_cls = _available_parsers[constraint_type]
+    constraint = constraint_parser_cls().build_constraint_from_definition_dict(
+        crop_plan_problem_data,
+        definition_dict,
+        name,
+    )
+
+    return constraint
+
 def load_constraints(
     crop_plan_problem_data: CropPlanProblemData,
     definitions_dict: dict[str, Any],
 ) -> dict[str, Constraint]:
-    constraints = {}
-
-    for name, def_dict in definitions_dict.items():
-        if "constraint_type" not in def_dict:
-            raise KeyError("`constraint_type` field required in constraints definitions")
-
-        constraint_type = def_dict["constraint_type"]
-
-        if constraint_type not in _available_parsers:
-            raise ValueError(
-                f"`constraint_type` should be one of `{list(_available_parsers.keys())}` (given `{constraint_type}`)"
-            )
-
-        constraint_parser_cls = _available_parsers[constraint_type]
-        constraint = constraint_parser_cls().build_constraint_from_definition_dict(
-            crop_plan_problem_data,
-            def_dict,
-            name,
-        )
-
-        constraints[name] = constraint
-
-    return constraints
+    return {
+        name: load_constraint(crop_plan_problem_data, def_dict, name=name)
+        for name, def_dict in definitions_dict.items()
+    }
