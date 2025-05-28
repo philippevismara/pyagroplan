@@ -112,6 +112,8 @@ class PrecedencesConstraint(SuccessionConstraintWithReinitialisation):
     crop_plan_problem_data : CropPlanProblemData
     precedences : pd.DataFrame
         Matrix containing the precedence effects delays, an entry i,j corresponds to the duration of the precedence effect of crop of type i (precedent crop) on crops of type j (following crop).
+    forbidden : bool
+        If True, specifies a negative precedence effect, otherwise a positive precedence effect.
     """
 
     def __init__(
@@ -120,12 +122,6 @@ class PrecedencesConstraint(SuccessionConstraintWithReinitialisation):
         precedences: pd.DataFrame,
         forbidden: bool,
     ):
-        if (
-            (forbidden and (precedences > datetime.timedelta(weeks=0)).any(axis=None))
-            or ((not forbidden) and (precedences < datetime.timedelta(weeks=0)).any(axis=None))
-        ):
-            raise ValueError("forbidden argument not consistent with signs in precedences matrix")
-
         crop_calendar = crop_plan_problem_data.crop_calendar
 
         precedences_graph = timedelta_dataframe_to_directed_graph(
@@ -175,8 +171,10 @@ class SpatialInteractionsConstraint(BinaryNeighbourhoodConstraint):
     ----------
     crop_plan_problem_data : CropPlanProblemData
     df_crops_interactions_matrix: pd.DataFrame
-        Matrix containing the interactions, a negative entry i,j corresponds to negative interaction between crop i and crop j.
+        Boolean matrix containing the interactions, a True entry i,j corresponds to interaction between crop i and crop j (positive or negative depending on forbidden).
     adjacency_name : string
+    forbidden : bool
+        If True, positive interaction, otherwise negative interaction.
     """
 
     def __init__(
@@ -186,11 +184,9 @@ class SpatialInteractionsConstraint(BinaryNeighbourhoodConstraint):
         adjacency_name: str,
         forbidden: bool,
     ):
-        if (
-            (forbidden and (df_crops_interactions_matrix > 0).any(axis=None))
-            or ((not forbidden) and (df_crops_interactions_matrix < 0).any(axis=None))
-        ):
-            raise ValueError("forbidden argument not consistent with signs in spatial interactions matrix")
+        if (df_crops_interactions_matrix.dtypes != bool).any():
+            raise ValueError("df_crops_interactions_matrix must be a boolean matrix")
+
         beds_data = crop_plan_problem_data.beds_data
         crop_calendar = crop_plan_problem_data.crop_calendar
 
@@ -212,7 +208,7 @@ class SpatialInteractionsConstraint(BinaryNeighbourhoodConstraint):
         return self.df_crops_interactions_matrix.loc[
             self.categorisation[need_i],
             self.categorisation[need_j]
-        ] != 0  # type: ignore[no-any-return]
+        ]
 
 
 class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
@@ -223,9 +219,11 @@ class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
     crop_plan_problem_data : CropPlanProblemData
     df_crops_interactions_matrix: pd.DataFrame
         Matrix containing the interactions, an entry i,j corresponds to an interaction between crop i and crop j.
-        It contains a string of the form "-[1,3][1,-1]", for instance, to forbid a spatial interaction between crop i during its 3 first week of cultivation and crop j during its whole cultivation period.
+        It contains a string of the form "[1,3][1,-1]", for instance, to specify a spatial interaction between crop i during its 3 first week of cultivation and crop j during its whole cultivation period.
     beds_data : BedsData
     adjacency_name : string
+    forbidden : bool
+        If True, positive interaction, otherwise negative interaction.
     """
 
     def __init__(
@@ -250,9 +248,9 @@ class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
 
         import re
         int_pattern = r"[+-]?[0-9]+"
+        interval_pattern = rf"\[({int_pattern}),({int_pattern})\]"
         self.regex_prog = re.compile(
-            rf"([\+-])\[({int_pattern}),({int_pattern})\]"
-            rf"\[({int_pattern}),({int_pattern})\]"
+            rf"^{interval_pattern}{interval_pattern}$",
         )
 
     def crops_selection_function(self, i: int, j: int) -> bool:
@@ -278,14 +276,8 @@ class SpatialInteractionsSubintervalsConstraint(BinaryNeighbourhoodConstraint):
                 f"Can not extract intervals from string: {interaction_str}"
             )
 
-        sign, s1, e1, s2, e2 = match.groups()
+        s1, e1, s2, e2 = match.groups()
         s1, e1, s2, e2 = int(s1), int(e1), int(s2), int(e2)
-
-        if (
-            (self.forbidden and (sign == "+"))
-            or ((not self.forbidden) and (sign == "-"))
-        ):
-            raise ValueError("forbidden argument not consistent with signs in spatial interactions matrix")
 
         interval1, interval2 = (
             self.crop_calendar.df_assignments

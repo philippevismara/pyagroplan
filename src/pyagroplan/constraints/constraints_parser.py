@@ -32,7 +32,7 @@ class ConstraintDefinitionsParser(ABC):
         self,
         rule_str: str,
         value: Any,
-        default_value: Any,
+        default_fill_value: Any,
         **kwargs: Any,
     ) -> Callable:
         ...
@@ -171,7 +171,7 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         self,
         rule_str: str,
         value: Any,
-        default_value: Any,
+        default_fill_value: Any,
         **kwargs: Any,
     ) -> Callable:
         rule_str = _preprocess_evaluated_str(rule_str)
@@ -181,7 +181,7 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
             following_crop = df_data
 
             res = pd.Series(index=df_data.index, dtype=object)
-            res[:] = default_value
+            res[:] = default_fill_value
             ind = eval(rule_str)
             res[ind] = value
             return res
@@ -189,25 +189,15 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         return rule_func
 
     def parse_rule(self, **kwargs: Any) -> Callable:
-        type = kwargs["type"]
-        if type == "forbidden":
-            type = "-"
-        elif type == "enforced":
-            type = "+"
-        else:
-            raise ValueError(
-                f"Precedence constraint type must be either "
-                f"'forbidden' or 'enforced', given {type}."
-            )
+        default_fill_value = datetime.timedelta(days=0)
 
-        default_value = datetime.timedelta(days=0)
-        #precendence_effect_delay = kwargs["precedence_effect_delay"]
-        #value = eval(f"datetime.timedelta({precendence_effect_delay})")
-        value = datetime.timedelta(weeks=int(type + kwargs["precedence_effect_delay_in_weeks"]))
+        precendence_effect_delay = kwargs["precedence_effect_delay_in_weeks"]
+        #value = eval(f"datetime.timedelta({precedence_effect_delay})")
+        value = datetime.timedelta(weeks=int(precendence_effect_delay))
 
         rule_str = kwargs["rule"]
 
-        rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
+        rule = self.parse_rule_str(rule_str, value, default_fill_value, **kwargs)
         return rule
 
     def build_constraint_from_definition_dict(
@@ -218,30 +208,27 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
+        type = def_dict["type"]
+        if (type != "forbidden") and (type != "enforced"):
+            raise ValueError(
+                f"Precedence constraint type must be either "
+                f"'forbidden' or 'enforced', given {type}."
+            )
+        forbidden = (type == "forbidden")
+
         matrix = self.build_matrix_from_definition_dict(
             crop_plan_problem_data.crop_calendar.df_assignments,
             def_dict,
             name=name,
         )
 
-        if def_dict["type"] == "forbidden":
-            return cstrs.PrecedencesConstraint(
-                crop_plan_problem_data,
-                matrix,
-                *args,
-                forbidden=True,
-                **kwargs,
-            )
-        elif def_dict["type"] == "enforced":
-            return cstrs.PrecedencesConstraint(
-                crop_plan_problem_data,
-                matrix,
-                *args,
-                forbidden=False,
-                **kwargs,
-            )
-        else:
-            raise NotImplementedError()
+        return cstrs.PrecedencesConstraint(
+            crop_plan_problem_data,
+            matrix,
+            *args,
+            forbidden=forbidden,
+            **kwargs,
+        )
 
 
 class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser):
@@ -249,7 +236,7 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         self,
         rule_str: str,
         value: Any,
-        default_value: Any,
+        default_fill_value: Any,
         **kwargs: Any,
     ) -> Callable:
         rule_str = _preprocess_evaluated_str(rule_str)
@@ -259,7 +246,7 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
             crop2 = df_data
 
             res = pd.Series(index=df_data.index, dtype=str)
-            res[:] = default_value
+            res[:] = default_fill_value
             ind = eval(rule_str)
             res[ind] = self.parse_value_str(value, row_data, df_data[ind])
             return res
@@ -267,7 +254,6 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         return rule_func
 
     def parse_value_str(self, value_str: str, row_data: pd.Series, df_data: pd.DataFrame) -> str:
-        # [1,3][-crop2["harvesting_time"]-4,-crop2["harvesting_time"]-1]
         value_str = _preprocess_evaluated_str(value_str)
 
         crop1 = row_data
@@ -277,7 +263,7 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         int_pattern = r"[+-]?[0-9]+"
         interval_pattern = r"\[(.+),(.+)\]"
         m = re.match(
-            rf"^([\+-]){interval_pattern}\w*{interval_pattern}$",
+            rf"{interval_pattern}\w*{interval_pattern}$",
             value_str,
         )
         if not m:
@@ -285,8 +271,8 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
                 f"Can not process value string in spatial constraint definition: {value_str}"
             )
 
-        sign, s1, e1, s2, e2 = m.groups()
-        res = sign + "["
+        s1, e1, s2, e2 = m.groups()
+        res = "["
         if re.fullmatch(int_pattern, s1.strip()):
             res += s1
         else:
@@ -312,24 +298,14 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
 
 
     def parse_rule(self, **kwargs: Any) -> Callable:
-        default_value = ""
-        type = kwargs["type"]
-        if type == "forbidden":
-            type = "-"
-        elif type == "enforced":
-            type = "+"
-        else:
-            raise ValueError(
-                f"Spatial interaction constraint type must be either "
-                f"'forbidden' or 'enforced', given {type}."
-            )
-        value = kwargs.get("intervals_overlap", "[1,-1][1,-1]")
-        #value = self.parse_value_str(kwargs["intervals_overlap"])
-        value = type + value
+        default_fill_value = ""
+
+        default_value = "[1,-1][1,-1]"
+        value = kwargs.get("intervals_overlap", default_value)
+        #value = self.parse_value_str(value)
 
         rule_str = kwargs["rule"]
-        
-        rule = self.parse_rule_str(rule_str, value, default_value, **kwargs)
+        rule = self.parse_rule_str(rule_str, value, default_fill_value, **kwargs)
 
         return rule
 
@@ -342,32 +318,28 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
+        type = def_dict["type"]
+        if (type != "forbidden") and (type != "enforced"):
+            raise ValueError(
+                f"Spatial interaction constraint type must be either "
+                f"'forbidden' or 'enforced', given {type}."
+            )
+        forbidden = (type == "forbidden")
+
         matrix = self.build_matrix_from_definition_dict(
             crop_plan_problem_data.crop_calendar.df_assignments,
             def_dict,
             name=name,
         )
 
-        if def_dict["type"] == "forbidden":
-            return cstrs.SpatialInteractionsSubintervalsConstraint(
-                crop_plan_problem_data,
-                matrix,
-                *args,
-                adjacency_name=def_dict["adjacency_type"],
-                forbidden=True,
-                **kwargs,
-            )
-        elif def_dict["type"] == "enforced":
-            return cstrs.SpatialInteractionsSubintervalsConstraint(
-                crop_plan_problem_data,
-                matrix,
-                *args,
-                adjacency_name=def_dict["adjacency_type"],
-                forbidden=False,
-                **kwargs,
-            )
-        else:
-            raise NotImplementedError()
+        return cstrs.SpatialInteractionsSubintervalsConstraint(
+            crop_plan_problem_data,
+            matrix,
+            *args,
+            adjacency_name=def_dict["adjacency_type"],
+            forbidden=forbidden,
+            **kwargs,
+        )
 
 
 class ReturnDelaysConstraintParser:

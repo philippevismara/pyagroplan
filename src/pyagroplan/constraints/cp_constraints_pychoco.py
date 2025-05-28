@@ -531,6 +531,8 @@ class BinaryNeighbourhoodConstraint(Constraint):
 
 class GroupNeighbourhoodConstraint(Constraint):
     """Implements spatial proximity constraints for groups of crops.
+    Attempts to group the crops by looking for paths in the adjacency graph of correct size 
+    (i.e., the resulting group might be spread away but there are always at least two crops close from one another)
 
     Parameters
     ----------
