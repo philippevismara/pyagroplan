@@ -133,16 +133,20 @@ class CompatibleBedsConstraintDefinitionsParser:
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
-        type = def_dict["type"]
-        if type == "forbidden":
-            forbidden = True
-        elif type == "enforced":
-            forbidden = False
-        else:
+        required_fields = ["type", "beds_selection_rule", "crops_selection_rule"]
+        missing_required_fields = set(required_fields) - set(def_dict.keys())
+        if missing_required_fields:
             raise ValueError(
-                f"Location constraint type must be either "
+                f"Compatible beds constraint requires the following missing parameters: {missing_required_fields}"
+            )
+
+        type = def_dict["type"]
+        if (type != "forbidden") and (type != "enforced"):
+            raise ValueError(
+                f"Compatible beds constraint type must be either "
                 f"'forbidden' or 'enforced', given {type}."
             )
+        forbidden = (type == "forbidden")
 
         beds_selection_rule = def_dict["beds_selection_rule"]
         beds_selection_rule = _preprocess_evaluated_str(beds_selection_rule)
@@ -208,6 +212,14 @@ class PrecedenceConstraintDefinitionsParser(ConstraintDefinitionsParser):
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
+        required_fields = ["type", "precedence_effect_delay_in_weeks", "rule"]
+        missing_required_fields = set(required_fields) - set(def_dict.keys())
+        if missing_required_fields:
+            raise ValueError(
+                f"Precedence constraint requires the following missing parameters: {missing_required_fields}"
+            )
+
+
         type = def_dict["type"]
         if (type != "forbidden") and (type != "enforced"):
             raise ValueError(
@@ -318,6 +330,13 @@ class SpatialInteractionsConstraintDefinitionsParser(ConstraintDefinitionsParser
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
+        required_fields = ["type", "adjacency_type", "rule"]
+        missing_required_fields = set(required_fields) - set(def_dict.keys())
+        if missing_required_fields:
+            raise ValueError(
+                f"Spatial interaction constraint requires the following missing parameters: {missing_required_fields}"
+            )
+
         type = def_dict["type"]
         if (type != "forbidden") and (type != "enforced"):
             raise ValueError(
@@ -398,6 +417,13 @@ class GroupCropsConstraintDefinitionParser:
         *args: Any,
         **kwargs: Any,
     ) -> Constraint:
+        required_fields = ["adjacency_type", "group_by"]
+        missing_required_fields = set(required_fields) - set(def_dict.keys())
+        if missing_required_fields:
+            raise ValueError(
+                f"Groupping constraint requires the following missing parameters: {missing_required_fields}"
+            )
+
         crops_groups = self.groupby_crops(
             crop_plan_problem_data,
             def_dict["group_by"],
