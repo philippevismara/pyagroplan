@@ -110,6 +110,85 @@ It is thus entirely up to the user to decide what knowledge they wants to incorp
 Here are some examples of possible columns one might want to use: `botanical_family`, `weedy_soil_sensitivity`, `requires_shade_in_summer`, etc.
 
 
+## Format of the constraint definition dictionary
+
+To simplify the use of this package, it is possible to completely configure the constraints using a dictionary.
+It contains an entry for each constraint.
+Here is an example:
+
+```python
+constraints_definitions = {
+    "crops_requiring_shade_in_summer": {
+        "constraint_type": "compatible_beds_constraint",
+        "type": "enforced",
+        "crops_selection_rule": """crop["requires_shade_in_summer"] & (crop["cultivation_season"] != "winter")""",
+        "beds_selection_rule": """bed["is_in_shade_during_summer"]""",
+    },
+    "return_delays": {
+        "constraint_type": "return_delays_constraint",
+        "return_delays": "data/return_delays.csv",
+    },
+    "forbid_favouring_weed_crop_before_weed-free_requirering_crop": {
+        "constraint_type": "precedence_constraint",
+        "type": "forbidden",
+        "precedence_effect_delay_in_weeks": "6",
+        "rule": """(preceding_crop["effect_on_weeds"] == "favouring") & (following_crop["weedy_soil_sensitivity"] == "high")""",
+    },
+    "forbid_cucurbitaceae_on_adjacent_beds": {
+        "constraint_type": "spatial_interactions_constraint",
+        "type": "forbidden",
+        "adjacency_type": "adjacent_beds_in_garden",
+        "rule": """(crop1["botanical_family"] == "cucurbitaceae") & (crop2["botanical_family"] == "cucurbitaceae")""",
+    },
+    "group_crops": {
+        "constraint_type": "group_crops_constraint",
+        "adjacency_type": "adjacent_beds_in_garden",
+        "group_by": "crop_group_id",
+    },
+}
+```
+
+Each individual constraint is defined using a dictionary.
+The type of the constraint is specified using the field `constraint_type` which takes a value among `compatible_beds_constraint`, `return_delays_constraint`, `precedence_constraint`, `spatial_interactions_constraint`, `group_crops_constraint`.
+
+Each constraint has its own set of parameters which are always given as a string.
+
+Note that, behind the scene, the "rule" parameters are actually evaluated using Python's `eval()` operated on `pandas` `Dataframe`.
+In particular, this is why the classic operators follows `pandas` syntax and not Python's one:
+- `&` is the `and` operator
+- `|` is the `or` operator
+- `~` is the `not` operator
+
+### Compatible beds constraint (`compatible_beds_constraint`)
+
+- `type`: `enforced` or `forbidden`
+- `crops_selection_rule`: boolean expression selecting on which `crop` this constraint is applied
+- `beds_selection_rule`: boolean expression selecting which `bed` are allowed or disallowed
+
+### Return delays constraint (`return_delays_constraint`)
+
+- `return_delays`: path to the CSV file containing the return delays matrix
+
+### Precedence constraint (`precedence_constraint`)
+
+- `type`: `enforced` or `forbidden`
+- `precedence_effect_delay_in_weeks`: integer specifying how long in weeks the precedence effect is effective
+- `rule`: boolean expression selecting which pairs of crops it is applied on (through `preceding_crop` and `following_crop`)
+
+### Spatial interactions constraint (`spatial_interactions_constraint`)
+
+- `type`: `enforced` or `forbidden`
+- `adjacency_type`: name of one of the adjacency measure defined in the beds data to use
+- `intervals_overlap` (optional): restricts the constraint to specific overlaps of the cultivation intervals (default: `[1,-1][1,-1]`)
+- `rule`: boolean expression selecting which pairs of crops it is applied on (through `crop1` and `crop2`, note that this constraint is symmetric)
+
+### Group crops constraint (`group_crops_constraint`)
+
+- `adjacency_type`: name of one of the adjacency measure defined in the beds data to use
+- `group_by`: name of the field to perform the group by on (typically `crop_group_id`)
+- `filtering_rule`: boolean expression selecting which crops it is applied on (through `crop`)
+
+
 ## License
 
 Pyagroplan has a CeCILL-C license, as found in the [LICENSE.md](LICENSE.md) file.
