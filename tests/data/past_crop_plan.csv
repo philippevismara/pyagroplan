@@ -1,4 +1,4 @@
-# description: Data from P&C workshops provided by Margot (files sent by email, 09/01/2025), reworked
+# description: past crops calendar
 # data_version: 1
 # format_version: 0.1
 crop_name;crop_type;starting_date;ending_date;allocated_beds_ids

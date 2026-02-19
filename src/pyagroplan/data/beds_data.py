@@ -80,7 +80,7 @@ class BedsData:
         Parameters
         ----------
         adjacency_name : string
-            Name of the adjacency graph to build.
+            Name of the column used to build the adjacency graph.
 
         Returns
         -------

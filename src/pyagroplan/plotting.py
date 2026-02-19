@@ -1,4 +1,19 @@
 from __future__ import annotations
+
+"""
+Module for visualizing crop calendars, beds, and crop planning solutions.
+
+This module provides functions to create visualizations for agricultural planning,
+including crop calendar timelines, bed layouts, adjacency graphs, and crop allocation plans.
+
+Functions:
+    get_crops_colors_by_botanical_family: Maps crop names to colors based on botanical families.
+    plot_crop_calendar: Visualizes a crop calendar as a timeline.
+    plot_beds: Displays beds on a geographic map with optional attribute coloring.
+    plot_beds_adjacency_graph: Draws a network graph of bed adjacencies.
+    plot_crop_plan: Visualizes crop allocations across beds over time.
+    plot_solution: Plots a complete crop planning solution.
+"""
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -25,6 +40,7 @@ def get_crops_colors_by_botanical_family(
 ) -> dict[str, Any]:
     if colors_list is None:
         from matplotlib import colormaps
+
         colors_list = colormaps["tab20"].colors
 
     families_names = crop_calendar.df_crop_calendar["botanical_family"].unique()
@@ -98,7 +114,7 @@ def plot_crop_calendar(
             verticalalignment="center",
         )
 
-    years_list = list(range(first_date.year, last_date.year+1))
+    years_list = list(range(first_date.year, last_date.year + 1))
     ax.set_xticks(
         [datetime.date(year, 1, 1) for year in years_list],
         labels=years_list,
@@ -140,9 +156,14 @@ def plot_beds(
 
     import geopandas as gpd
     import shapely
-    gdf_beds = gpd.GeoDataFrame(df_beds, geometry=shapely.from_wkt(df_beds["geolocalised_shape"]), crs=crs_wgs84)
 
-    gdf_gardens = gdf_beds.groupby("garden").geometry.apply(lambda s: shapely.convex_hull(s.union_all()))
+    gdf_beds = gpd.GeoDataFrame(
+        df_beds, geometry=shapely.from_wkt(df_beds["geolocalised_shape"]), crs=crs_wgs84
+    )
+
+    gdf_gardens = gdf_beds.groupby("garden").geometry.apply(
+        lambda s: shapely.convex_hull(s.union_all())
+    )
     gdf_gardens = gdf_gardens.set_crs(crs_wgs84)
 
     gdf_gardens.plot(color="sandybrown", ax=ax, zorder=-1)
@@ -183,14 +204,15 @@ def plot_beds(
 
 def plot_beds_adjacency_graph(
     beds_data: BedsData,
-    adjacency_name: str,
+    adjacency_column_name: str,
     ax: Optional[plt.Axes] = None,
+    colouring_column_name: Optional[str] = None,
 ) -> plt.Axes:
     if not ax:
         fig = plt.figure()
         ax = fig.gca()
 
-    beds_adjacency_graph = beds_data.get_adjacency_graph(adjacency_name)
+    beds_adjacency_graph = beds_data.get_adjacency_graph(adjacency_column_name)
 
     if "garden_id" in beds_data.df_beds_data.columns:
         gb = beds_data.df_beds_data.groupby("garden_id")
@@ -205,10 +227,28 @@ def plot_beds_adjacency_graph(
         align="horizontal",
     )
 
+    if colouring_column_name is not None:
+        # build the list of colors for each bed according to the different values of the colouring columnn
+        if colouring_column_name not in beds_data.df_beds_data.columns:
+            raise ValueError(
+                f"{colouring_column_name} is not an attribute of beds data"
+            )
+        values = beds_data.df_beds_data[colouring_column_name].unique().tolist()
+        if len(values) <= 10:
+            color_list = plt.cm.tab10.colors[: len(values)]
+        else:
+            color_list = plt.cm.tab20.colors[: len(values)]
+        colors = [
+            color_list[values.index(val) % len(color_list)]
+            for val in beds_data.df_beds_data[colouring_column_name]
+        ]
+    else:
+        colors = "gray"
+
     nx.draw_networkx(
         beds_adjacency_graph,
         layout,
-        node_color="gray",
+        node_color=colors,
         ax=ax,
     )
     ax.axis("off")
@@ -233,7 +273,9 @@ def plot_crop_plan(
             df_crop_plan = past_crop_plan.df_past_assignments.copy()
             df_crop_plan["allocated_bed_id"] = past_crop_plan.allocated_bed_id
         else:
-            raise ValueError("df_crop_plan not set but no past crop plan found in crop_calendar")
+            raise ValueError(
+                "df_crop_plan not set but no past crop plan found in crop_calendar"
+            )
 
     from collections import defaultdict
 
@@ -266,7 +308,7 @@ def plot_crop_plan(
         )
 
     # Shows years on horizontal axis
-    years_list = list(range(first_date.year, last_date.year+1))
+    years_list = list(range(first_date.year, last_date.year + 1))
     ax.set_xticks(
         [datetime.date(year, 1, 1) for year in years_list],
         labels=years_list,
@@ -300,7 +342,7 @@ def plot_crop_plan(
     for i, garden_name in enumerate(garden_names):
         ax.text(
             first_date,
-            gardens_limits[i:i+2].mean(),
+            gardens_limits[i : i + 2].mean(),
             "garden " + garden_name,
             horizontalalignment="center",
             verticalalignment="center",
@@ -319,7 +361,9 @@ def plot_solution(
     ax: Optional[plt.Axes] = None,
 ) -> plt.Axes:
     # TODO normalize name throughout package
-    df_crop_plan = solution.crops_planning.rename(columns={"assignment": "allocated_bed_id"})
+    df_crop_plan = solution.crops_planning.rename(
+        columns={"assignment": "allocated_bed_id"}
+    )
 
     return plot_crop_plan(
         solution.crop_plan_problem_data.beds_data,

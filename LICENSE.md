@@ -1,4 +1,4 @@
-Copyright Institut Agro Montpellier 2024-2025
+Copyright Institut Agro Montpellier 2024-2026
 
 contact: philippe.vismara@institut-agro.fr
 

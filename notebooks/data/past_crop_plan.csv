@@ -1,0 +1,11 @@
+# description: Toy example
+# data_version: 1.0
+# format_version: 0.1
+crop_name;crop_type;starting_date;ending_date;allocated_beds_ids
+Onion;onion;2024-W14;2024-W36;3
+Salad;salad;2024-W37;2024-W45;3
+Squashs;squash;2024-W19;2024-W40;0
+Leek;leek;2024-W26;2025-W04;1
+Tomato;tomato;2024-W19;2024-W44;2
+Salad;salad;2024-W19;2024-W28;4
+Broccoli;broccoli;2024-W36;2025-W01;4

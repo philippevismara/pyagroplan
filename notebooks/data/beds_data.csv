@@ -1,0 +1,10 @@
+# description: Toy example - 5 beds in one single garden
+# data_version: 1.0
+# format_version: 0.1
+metadata;metadata;metadata;attributes;adjacent_beds
+bed_id;garden;position_in_garden;in_shade;adjacent_beds_in_garden
+0;A;0;false;1
+1;A;1;false;0,2
+2;A;2;false;1
+3;B;0;false;4
+4;B;1;true;3

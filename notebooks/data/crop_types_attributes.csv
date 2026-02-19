@@ -1,0 +1,13 @@
+# description: Toy example
+# data_version: 1.0
+# format_version: 0.1
+crop_type;botanical_family;effect_on_weeds;requires_weed-free_soil;requires_sun_exposure
+broccoli;brassicaceae;suppressive;false;
+carrot;apiaceae;favouring;true;
+courgette;cucurbitaceae;suppressive;false;full_sun
+eggplant;solanaceae;suppressive;false;full_sun
+leek;aliaceae;favouring;true;
+onion;aliaceae;favouring;true;
+salad;asteraceae;suppressive;true;
+squash;cucurbitaceae;suppressive;false;
+tomato;solanaceae;suppressive;false;full_sun

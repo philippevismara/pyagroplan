@@ -1,4 +1,7 @@
 # Pyagroplan
+**Authors:** Margot Challand, Dimitri Justeau-Allaire, Titouan Lorieul, Stéphane de Tourdonnet, Philippe Vismara
+**Contact:** philippe.vismara@institut-agro.fr
+
 
 [![python-package](https://github.com/philippevismara/pyagroplan/actions/workflows/python-package.yml/badge.svg)](https://github.com/philippevismara/pyagroplan/actions)
 [![code-style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -10,6 +13,10 @@ The package and its dependencies can be installed using `pip`:
 ```script
 pip install .
 ```
+
+## Tutorials
+
+- 📓 [Getting started notebook](notebooks/toy_example.ipynb)
 
 
 ## Unit tests
@@ -192,3 +199,11 @@ In particular, this is why the classic operators follows `pandas` syntax and not
 ## License
 
 Pyagroplan has a CeCILL-C license, as found in the [LICENSE.md](LICENSE.md) file.
+
+
+## Funding
+
+This project has received co-funding from the European Union.
+Views and opinions expressed are however those of the authors only and do not necessarily reflect those of the European Union.
+The European Union cannot be held responsible for them.
+Project 101123258

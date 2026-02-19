@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "pyagroplan"
-copyright = "2024, Titouan Lorieul"
-author = "Titouan Lorieul"
+copyright = "2024-2026, Institut Agro Montpellier"
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

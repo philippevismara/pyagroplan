@@ -56,6 +56,13 @@ def _get_available_search_strategies() -> dict[str, Callable]:
 #: Dictionnary of search strategies implemented in Pychoco
 available_search_strategies = _get_available_search_strategies()
 
+
+# Exception raised when the problem is not satisfiable (i.e., no solution can be found)
+class ProblemUnsatisfiableError(RuntimeError):
+    pass
+
+
+
 class AgroEcoPlanModel:
     """Global class used to configure and solve the model.
 
@@ -282,7 +289,7 @@ class AgroEcoPlanModel:
             if self.solver.get_search_state() == "STOPPED":
                 raise RuntimeError("No solution found before search limits reached")
             else:
-                raise RuntimeError("Problem not satisfiable: no solution can be found")
+                raise ProblemUnsatisfiableError("Problem not satisfiable: no solution can be found")
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_plan_problem_data, variables_values)
@@ -292,6 +299,7 @@ class AgroEcoPlanModel:
         self,
         constraints: dict,
         max_subset_size: int,
+        time_limit=[None, str],
     ) -> list:
         import math
         from rich.progress import track
@@ -301,7 +309,7 @@ class AgroEcoPlanModel:
         for subset_size in range(1, max_subset_size+1):
             for constraints_subset in track(
                 itertools.combinations(constraints.items(), subset_size),
-                description=f"Testing combinations of {subset_size} constraints...",
+                description=f" + Testing combinations of {subset_size} constraints...",
                 total=math.comb(len(constraints), subset_size),
             ):
                 constraints_subset = dict(constraints_subset)
@@ -310,8 +318,11 @@ class AgroEcoPlanModel:
                 model.init(constraints_subset)
 
                 try:
-                    solution = model.solve(time_limit="60s")
-                except RuntimeError as e:
+                    if time_limit is not None:
+                        solution = model.solve(time_limit="60s")
+                    else:
+                        solution = model.solve()
+                except ProblemUnsatisfiableError:
                     unsatisfiable_combinations.append(list(constraints_subset.keys()))
 
             if unsatisfiable_combinations:
@@ -402,9 +413,9 @@ class AgroEcoPlanModel:
                     constraint_type = cp_constraints[0].get_name()
                 else:
                     constraint_type = cp_constraints[0]
-                print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
+                print(f" - {constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
             else:
-                print(f"{constraint_name}: {len(cp_constraints)} constraints")
+                print(f" - {constraint_name}: {len(cp_constraints)} constraints")
 
         if self._objective_functions:
             print("\nList of registered objective functions")
@@ -420,9 +431,9 @@ class AgroEcoPlanModel:
                         constraint_type = cp_constraints[0].get_name()
                     else:
                         constraint_type = cp_constraints[0]
-                    print(f"{constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
+                    print(f" - {constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
                 else:
-                    print(f"{constraint_name}: {len(cp_constraints)} constraints")
+                    print(f" - {constraint_name}: {len(cp_constraints)} constraints")
 
 
     def print_objective_functions_values(self) -> None:
@@ -435,4 +446,4 @@ class AgroEcoPlanModel:
 
                 gain_value = gain_var.get_value()
                 max_value = len(self._objective_functions[constraint_obj])
-                print(f"{constraint_name}: value/max_value = {gain_value}/{max_value}")
+                print(f" - {constraint_name}: value/max_value = {gain_value}/{max_value}")

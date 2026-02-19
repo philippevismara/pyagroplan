@@ -1,0 +1,13 @@
+# description: Toy example
+# data_version: 1.0
+# format_version: 0.1
+crop_type;eggplant;broccoli;carrot;squash;courgette;onion;leek;salad;tomato
+eggplant;3;;;;;;;;3
+broccoli;;3;;;;;;;
+carrot;;;5;;;;;;
+squash;;;;4;2;;;;
+courgette;;;;2;2;;;;
+onion;;;;;;6;6;;
+leek;;;;;;5;5;;
+salad;;;;;;;;;
+tomato;4;;;;;;;;4

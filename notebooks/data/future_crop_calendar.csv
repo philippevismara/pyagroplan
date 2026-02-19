@@ -1,0 +1,7 @@
+# description: Toy example
+# data_version: 1.0
+# format_version: 0.1
+crop_name;crop_type;starting_date;ending_date;quantity
+Courgette;courgette;2025-W22;2025-W34;2
+Eggplant;eggplant;2025-W17;2025-W38;2
+Carrot;carrot;2025-W05;2025-W23;1
