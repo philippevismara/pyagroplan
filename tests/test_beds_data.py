@@ -21,6 +21,7 @@ def df_beds_data():
             ("metadata", "bed_id"),
             ("adjacent_beds", "garden_neighbors"),
         )),
+        dtype=object, 
     )
     return df_beds_data
 
