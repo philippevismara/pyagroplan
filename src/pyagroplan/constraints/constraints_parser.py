@@ -109,9 +109,9 @@ class ConstraintDefinitionsParser(ABC):
             self.parse_rule(**definition_dict),
             axis=1,
             args=(df_data,),
+            result_type="expand",
         )
-        df_matrix.index = df_data.index
-        df_matrix.columns = df_data.index
+        
 
         if (
             (df_matrix == "").all(axis=None)
