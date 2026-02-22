@@ -34,7 +34,7 @@ jobs:
         submodules: recursive
     - id: pychoco-pull
       run: |
-        echo "PYCHOCO_LATEST_HASH=$(git -C pychoco log HEAD -n 1 --pretty=format:%h)" >> "$GITHUB_ENV"
+        echo "PYCHOCO_LATEST_HASH=$(git -C pychoco log HEAD -n 1 --pretty=format:%h)" >> "$GITHUB_OUTPUT"
     - name: Cache pychoco build
       id: cache-pychoco
       uses: actions/cache@v4
@@ -42,7 +42,7 @@ jobs:
         cache-name: cache-pychoco-build
       with:
         path: pychoco
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.PYCHOCO_LATEST_HASH }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ steps.pychoco-pull.outputs.PYCHOCO_LATEST_HASH }}
     - if: ${{ steps.cache-pychoco.outputs.cache-hit != 'true' }}
       name: Install setuptools (needed from Python 3.12)
       run: pip install setuptools
@@ -66,6 +66,10 @@ jobs:
     - name: Install pyagroplan
       run: |
         pip install .
+    - name: Show installed packages
+      run: |
+        python -V
+        pip list
     - name: Test with pytest
       run: |
         python -m pytest tests
