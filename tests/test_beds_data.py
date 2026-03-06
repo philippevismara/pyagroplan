@@ -11,24 +11,24 @@ DATA_PATH = CURRENT_DIR / "data"
 
 @pytest.fixture
 def df_beds_data():
-    df_beds_data = pd.DataFrame(
+    df_bedsdata = pd.DataFrame(
         [
             [1, (2,)],
             [2, (1, 3)],
             [3, (2,)],
         ],
-        columns=pd.MultiIndex.from_tuples((
+        columns=pd.MultiIndex.from_tuples([
             ("metadata", "bed_id"),
             ("adjacent_beds", "garden_neighbors"),
-        )),
+        ]),
         dtype=object, 
     )
-    return df_beds_data
-
+    df_bedsdata = df_bedsdata.astype("object")
+    return df_bedsdata
 
 def test_beds_loader(df_beds_data):
     df_beds_data_from_file = CSVBedsDataLoader.load(DATA_PATH / "beds_data.csv")
-    assert (df_beds_data_from_file == df_beds_data).all(axis=None)
+    pd.testing.assert_frame_equal(df_beds_data_from_file,df_beds_data)
 
 
 def test_beds_data(df_beds_data):
@@ -40,3 +40,4 @@ def test_beds_data(df_beds_data):
     assert (1, 2) in adjacency_graph.edges
     assert (2, 3) in adjacency_graph.edges
     assert (1, 3) not in adjacency_graph.edges
+

@@ -80,7 +80,7 @@ class CropCalendar:
                 format="ISO8601",
             ).dt.date
         except ValueError:
-            from .data_loaders.utils import starting_week_str_to_datetime, ending_week_str_to_datetime
+            from .data_loaders.loaders_utils import starting_week_str_to_datetime, ending_week_str_to_datetime
             df_future_crop_calendar.starting_date = starting_week_str_to_datetime(df_future_crop_calendar.starting_date)
             df_future_crop_calendar.ending_date = ending_week_str_to_datetime(df_future_crop_calendar.ending_date)
 
