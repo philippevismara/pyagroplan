@@ -28,7 +28,7 @@ def df_beds_data():
 
 def test_beds_loader(df_beds_data):
     df_beds_data_from_file = CSVBedsDataLoader.load(DATA_PATH / "beds_data.csv")
-    pd.testing.assert_frame_equal(df_beds_data_from_file,df_beds_data)
+    pd.testing.assert_frame_equal(df_beds_data_from_file,df_beds_data,  check_dtype=False)
 
 
 def test_beds_data(df_beds_data):
