@@ -53,7 +53,7 @@ class Solution:
     ):
         self.status = status
 
-        if self.status !=Solution.FEASIBLE:
+        if self.status == Solution.FEASIBLE:
         
             crop_calendar = crop_plan_problem_data.crop_calendar
 
