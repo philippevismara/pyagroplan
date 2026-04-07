@@ -20,7 +20,7 @@ from pychoco.constraints.cnf.log_op import LogOp
 
 from . import CropPlanProblemData
 from .constraints.cp_constraints_pychoco import Constraint
-from .solution import Solution, SolverStatus
+from .solution import Solution
 
 
 
@@ -305,12 +305,12 @@ class AgroEcoPlanModel:
                 if self.raise_error:
                     raise LimitReachedError("No solution found before search limits reached")
                 else :
-                    return Solution(self.crop_plan_problem_data, [], status=SolverStatus.TIMEOUT)
+                    return Solution(self.crop_plan_problem_data, [], status=Solution.TIMEOUT)
             else:
                 if self.raise_error:
                     raise ProblemUnsatisfiableError("Problem not satisfiable: no solution can be found")
                 else:
-                    return Solution(self.crop_plan_problem_data, [], status=SolverStatus.INFEASIBLE)
+                    return Solution(self.crop_plan_problem_data, [], status=Solution.INFEASIBLE)
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_plan_problem_data, variables_values)
@@ -377,7 +377,7 @@ class AgroEcoPlanModel:
         """
         while True:
             try:
-                yield self.solve()
+                yield self.solve(raise_error=True)
             except RuntimeError:
                 break
 
