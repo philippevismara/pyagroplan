@@ -20,7 +20,9 @@ from pychoco.constraints.cnf.log_op import LogOp
 
 from . import CropPlanProblemData
 from .constraints.cp_constraints_pychoco import Constraint
-from .solution import Solution
+from .solution import Solution, SolverStatus
+
+
 
 
 def _get_available_search_strategies() -> dict[str, Callable]:
@@ -61,6 +63,9 @@ available_search_strategies = _get_available_search_strategies()
 class ProblemUnsatisfiableError(RuntimeError):
     pass
 
+# Exception raised when the search limits are reached (i.e., no solution found before search limits reached)
+class LimitReachedError(RuntimeError):
+    pass
 
 
 class AgroEcoPlanModel:
@@ -87,7 +92,7 @@ class AgroEcoPlanModel:
 
     def __init__(
         self,
-        crop_plan_problem_data: CropPlanProblemData,
+        crop_plan_problem_data: CropPlanProblemData
     ):
         beds_data = crop_plan_problem_data.beds_data
         crop_calendar = crop_plan_problem_data.crop_calendar
@@ -261,18 +266,26 @@ class AgroEcoPlanModel:
         func = available_search_strategies[search_strategy]
         func(self.solver, *self.assignment_vars)
 
-    def solve(self, **kwargs: Any) -> Solution:
+    def solve(self, raise_error=false, **kwargs: Any) -> Solution:
         """Attempts to solve the model.
 
         Parameters
         ----------
+        raise_error : bool
+            Whether to raise an error there is no solution: the problem is not satisfiable (i.e., no solution) or the search limits are reached (i.e., no solution found before search limits reached).
         kwargs :
             Arguments to pass to Pychoco's solver solve() function.
 
         Raises
         ------
         RuntimeError
-            If no solution can be found.
+            If the model is not initiated
+
+        ProblemUnsatisfiableError
+            If raise_error is True and the problem is not satisfiable (i.e., no solution can be found).
+        
+        LimitReachedError
+            If raise_error is True and the search limits are reached (i.e., no solution found before search limits reached).
 
         Returns
         -------
@@ -280,6 +293,8 @@ class AgroEcoPlanModel:
         """
         if not self.initiated:
             raise RuntimeError("Model should be initialised using the init() method")
+        
+        self.raise_error = raise_error
 
         if not hasattr(self, "solver"):
             self.configure_solver()
@@ -287,9 +302,15 @@ class AgroEcoPlanModel:
         has_solution = self.solver.solve(**kwargs)
         if not has_solution:
             if self.solver.get_search_state() == "STOPPED":
-                raise RuntimeError("No solution found before search limits reached")
+                if self.raise_error:
+                    raise LimitReachedError("No solution found before search limits reached")
+                else :
+                    return Solution(self.crop_plan_problem_data, [], status=SolverStatus.TIMEOUT)
             else:
-                raise ProblemUnsatisfiableError("Problem not satisfiable: no solution can be found")
+                if self.raise_error:
+                    raise ProblemUnsatisfiableError("Problem not satisfiable: no solution can be found")
+                else:
+                    return Solution(self.crop_plan_problem_data, [], status=SolverStatus.INFEASIBLE)
         else:
             variables_values = self._extract_variables_values(self.assignment_vars)
             return Solution(self.crop_plan_problem_data, variables_values)
