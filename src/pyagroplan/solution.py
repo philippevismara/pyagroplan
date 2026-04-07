@@ -84,7 +84,7 @@ class Solution:
         return len(self.crops_planning)
 
     def __str__(self) -> str:
-        if self.status == SolverStatus.FEASIBLE:
+        if self.status == Solution.FEASIBLE:
             return "Solution:\n{}".format(self.crops_planning)
         else:
             return "Solution not found: {}".format(self.status.value)
