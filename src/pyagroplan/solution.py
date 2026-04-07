@@ -11,6 +11,11 @@ import numpy as np
 
 from enum import Enum
 
+class SolverStatus(Enum):
+        FEASIBLE = "feasible"     # a solution has been found
+        INFEASIBLE = "infeasible" # no solution can be found (over-constrained problem)
+        TIMEOUT = "timeout"       # no solution found before search limits reached (e.g., time limit, memory limit, etc.)
+        OPTIMAL = "optimal"       # an optimal solution has been found (i.e., the best solution according to the objective function)
 
 
 class Solution:
@@ -33,12 +38,7 @@ class Solution:
         Assignments of crops to beds.
     """
 
-    class SolverStatus(Enum):
-        FEASIBLE = "feasible"     # a solution has been found
-        INFEASIBLE = "infeasible" # no solution can be found (over-constrained problem)
-        TIMEOUT = "timeout"       # no solution found before search limits reached (e.g., time limit, memory limit, etc.)
-        OPTIMAL = "optimal"       # an optimal solution has been found (i.e., the best solution according to the objective function)
-        
+            
     OPTIMAL = SolverStatus.OPTIMAL
     FEASIBLE = SolverStatus.FEASIBLE
     INFEASIBLE = SolverStatus.INFEASIBLE
