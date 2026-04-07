@@ -266,7 +266,7 @@ class AgroEcoPlanModel:
         func = available_search_strategies[search_strategy]
         func(self.solver, *self.assignment_vars)
 
-    def solve(self, raise_error=false, **kwargs: Any) -> Solution:
+    def solve(self, raise_error=False, **kwargs: Any) -> Solution:
         """Attempts to solve the model.
 
         Parameters
