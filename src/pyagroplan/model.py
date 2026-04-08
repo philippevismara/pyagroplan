@@ -12,8 +12,8 @@ import itertools
 
 import numpy as np
 from collections.abc import Mapping, Sequence
-
-from pychoco import Model
+        
+from pychoco.model import Model
 from pychoco.solver import Solver as ChocoSolver
 from pychoco.variables.boolvar import BoolVar
 from pychoco.constraints.cnf.log_op import LogOp
@@ -340,9 +340,9 @@ class AgroEcoPlanModel:
 
                 try:
                     if time_limit is not None:
-                        solution = model.solve(time_limit="60s")
+                        solution = model.solve(time_limit="60s", raise_error=True)
                     else:
-                        solution = model.solve()
+                        solution = model.solve(raise_error=True)
                 except ProblemUnsatisfiableError:
                     unsatisfiable_combinations.append(list(constraints_subset.keys()))
 
@@ -423,6 +423,8 @@ class AgroEcoPlanModel:
     def print_constraints_statistics(self) -> None:
         print("List of registered constraints")
 
+        nbcontraints = 0
+
         for constraint_obj, cp_constraints in self._constraints.items():
             if isinstance(constraint_obj, str):
                 constraint_name = constraint_obj
@@ -437,6 +439,8 @@ class AgroEcoPlanModel:
                 print(f" - {constraint_name}: {len(cp_constraints)} constraints of type '{constraint_type}'")
             else:
                 print(f" - {constraint_name}: {len(cp_constraints)} constraints")
+            nbcontraints += len(cp_constraints)
+        print(f" TOTAL number of constraints: {nbcontraints}")
 
         if self._objective_functions:
             print("\nList of registered objective functions")
